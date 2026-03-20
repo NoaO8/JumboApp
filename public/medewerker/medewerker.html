@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>medewerker_app</title>
+
 </head>
 <body>
     <main>
@@ -14,7 +15,7 @@
         </header>
         <nav>
             <div class="nav_container">
-                <!--kleine placeholder--> <p>placeholder</p>
+                <!--kleine placeholder <p>placeholder</p> -->
             </div>
         </nav>
         <div class="inhoud_container">
@@ -22,27 +23,5 @@
         </div>
     </main>
 </body>
+<script src="script.js"></script>
 </html>
-<script>
-    //containers ophalen om te vullen bij opstart
-    const header_container = document.querySelector(".header_container")
-    const nav_container = document.querySelector(".nav_container")
-    const inhoud_container = document.querySelector(".inhoud_container")
-
-    //fill functies opzetten
-    const fill_header_container = () => {
-        const header_span = document.querySelector(".header_span")
-        header_span.textContent = "Mijn Planner" //verander ik wel als nav af is
-    }
-    const fill_nav_container = () => {
-        //alle buttons
-    }
-    const fill_inhoud_container = () => {
-        //ook eerst nav afmaken
-    }
-
-    //alle fills bij opstart aanroepen
-    fill_header_container()
-    fill_nav_container()
-    fill_inhoud_container()
-</script>
