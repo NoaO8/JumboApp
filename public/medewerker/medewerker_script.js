@@ -9,7 +9,6 @@ const btn_go_berichten = document.createElement("button")
 const btn_go_profiel = document.createElement("button")
 //globale variabelen
 
-
 //fill functies opzetten
 const fill_header_container = (titel = "Mijn Planner") => {
     const header_span = document.querySelector(".header_span")
@@ -35,6 +34,7 @@ const fill_nav_container = () => {
 }
 const fill_inhoud_container = (welke_inhoud = "Mijn Planner") => {
     //ook eerst nav afmaken
+    //eerst moetn we weten ofda wie da is ingelogt
     //console.log(welke_inhoud)
     switch (welke_inhoud) {
         case "Mijn Planner":

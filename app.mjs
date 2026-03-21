@@ -34,8 +34,28 @@ const server = http.createServer((req, res) => {
             res.setHeader("Content-Type", "text/html")
             res.end(data)
         })
-    }else if (req.method === "GET" && req.url === "/script.js") {
-        const filePath = path.join(__dirname, "public", "medewerker", "script.js")
+    }else if (req.method === "GET" && req.url === "/medewerker_script.js") {
+        const filePath = path.join(__dirname, "public", "medewerker", "medewerker_script.js")
+        fs.readFile(filePath, "utf8", (err, data) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end("Error loading page")
+            }
+            res.setHeader("Content-Type", "application/javascript")
+            res.end(data)
+        }) 
+    }else if (req.method === "GET" && req.url === "/inlog") {
+        const filePath = path.join(__dirname, "public", "inlog.html")
+        fs.readFile(filePath, "utf8", (err, data) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end("Error loading page")
+            }
+            res.setHeader("Content-Type", "text/html")
+            res.end(data)
+        }) 
+    }else if (req.method === "GET" && req.url === "/inlog_script.js") {
+        const filePath = path.join(__dirname, "public", "inlog_script.js")
         fs.readFile(filePath, "utf8", (err, data) => {
             if (err) {
                 res.statusCode = 500
