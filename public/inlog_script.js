@@ -9,8 +9,17 @@ const fill_header_container = () => {
     header_container.appendChild(login_header)
 }
 const fill_inhoud_container = () => {
-    const username_label = document.createElement("label")
-    
+    const username_input = document.createElement("input")
+    username_input.placeholder = "Vul hier uw gebruikersnaam in"
+    username_input.id = "username_input"
+    const password_input = document.createElement("input")
+    password_input.placeholder = "Vul hier uw wachtwoord in"
+    password_input.id = "password_input"
+    const login_button = document.createElement("button")
+    login_button.textContent = "Login"
+    login_button.id = "login_button"
+
+    inhoud_container.append(username_input, password_input, login_button) //append is goe om meer dan 1 ding doortesturen
 }
 
 //fills oproepen
