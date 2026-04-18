@@ -3,8 +3,8 @@ import fs from "fs"
 import path from "path"
 import http from "http"
 import sqlite3 from "sqlite3"
-import crypto from "crypto"
-import { error } from "console" //das ier vanzelf en kheb schrik om da wegtedoen
+import crypto from "crypto" //alleen nodig als we hashen
+import { error } from "console" //das ier vanzelf gekomen en kheb schrik om da wegtedoen
 const __dirname = import.meta.dirname
 //tokens opslaan, vo nu ist goe da we het zo doen, vinden wel andere manier later
 const tokens = {}
@@ -18,39 +18,37 @@ const db = new sqlite3.Database("testdb.db", (err) => {
 })
 //functies
 //login functie die hashed, want zo en de wachtwoorden opgeslaan
-const login = (username, password, res) => {
-    console.log(username)
-    const username_split = username.split(" ")
-    const first_name = username_split[0]
-    const last_name = username_split[1]
-    console.log(username_split)
-    db.get("SELECT * FROM users WHERE first_name = ? AND last_name = ?", [first_name, last_name], (err, user) => {
-        console.log(user)
-        if (err) {
-            res.statusCode = 500
-            return res.end(JSON.stringify({ message: "database fout", err: err.message }))
-        }
-
-        const incomingHash = crypto.createHash("sha256").update(password).digest("hex")
-
-        if (user && incomingHash === user.wachtwoord) {
-            let token = tokens[username]
-            if (token === undefined) {
-                tokens[username] = crypto.randomBytes(8).toString("hex")
-                token = tokens[username]
+const login = (geboorteDatum, res) => {
+    db.get(
+        `SELECT * FROM users
+        INNER JOIN planner_users
+         ON users.users_id = planner_user.user_id
+         WHERE birthdate = ?
+         `,
+        [geboorteDatum],
+        (err, user) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
             }
-            res.statusCode = 200
-            res.setHeader("Content-Type", "application/json")
-            return res.end(JSON.stringify({ token }))
-        } else {
-            res.statusCode = 401
-            res.setHeader("Content-Type", "application/json")
-            return res.end(JSON.stringify({ message: "username of password fout" }))
+        
+    if (user && geboorteDatum === user.birthdate) {
+        console.log(geboorteDatum)
+        console.log(user.birthdate)
+        // token maken of hergebruiken
+        let token = tokens[geboorteDatum]
+        if (token === undefined) {
+            tokens[geboorteDatum] = crypto.randomBytes(8).toString("hex")
+            token = tokens[geboorteDatum]
         }
+
+        res.statusCode = 200
+        res.setHeader("Content-Type", "application/json")
+        return res.end(JSON.stringify({ token }))
     }
-    )
+    })
+
 }
-//json lezer om herhaling te vermijden, cb is gwn een callback
 const readJsonBody = (req, res, cb) => {
     let body = ""
     req.on("data", chunk => body += chunk)
@@ -65,14 +63,15 @@ const readJsonBody = (req, res, cb) => {
         }
     })
 }
-//token checken, komt van een demo met meneer A. Kindt
 const getUsernameFromAuthHeader = (req) => {
     const header = req.headers["authorization"]
     if (!header) return null
 
+    // verwacht: "Bearer abc123"
     const [scheme, token] = header.split(" ")
     if (scheme !== "Bearer" || !token) return null
 
+    // token → username (zoeken in tokens object)
     for (const username of Object.keys(tokens)) {
         if (tokens[username] === token) return username
     }
@@ -133,13 +132,14 @@ const server = http.createServer((req, res) => {
     } else if (req.method === "POST" && req.url === "/login") {
         res.setHeader("Content-Type", "application/json")
         return readJsonBody(req, res, (err, data) => {
-            const { username, password } = data
-            if (!username || !password) {
+            const { geboorteDatum } = data
+            if (!geboorteDatum) {
                 res.statusCode = 400
-                return res.end(JSON.stringify({ message: "username en password verplicht" }))
+                return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
             }
-            login(username, password, res)
+            login(geboorteDatum, res)
         })
+
     } else {
         res.statusCode = 404
         res.setHeader("Content-Type", "text/plain")

@@ -3,8 +3,9 @@ const header_container = document.querySelector(".header_container")
 const inhoud_container = document.querySelector(".inhoud_container")
 //DOM elementen die je globaal nodig hebt
 const login_button = document.createElement("button")
-const username_input = document.createElement("input")
-const password_input = document.createElement("input")
+const geboorteDatumInput = document.createElement("input")
+//const username_input = document.createElement("input")
+//const password_input = document.createElement("input")
 //containers fillen
 const fill_header_container = () => {
     const login_header = document.createElement("h1")
@@ -12,29 +13,30 @@ const fill_header_container = () => {
     header_container.appendChild(login_header)
 }
 const fill_inhoud_container = () => {
-    username_input.placeholder = "Vul hier uw gebruikersnaam in"
-    username_input.id = "username_input"
-    password_input.placeholder = "Vul hier uw wachtwoord in"
-    password_input.id = "password_input"
-    password_input.type = "password"
-    login_button.textContent = "Login"
-    login_button.id = "login_button"
-
-    inhoud_container.append(username_input, password_input, login_button) //append is goe om meer dan 1 ding doortesturen
+    geboorteDatumInput.type = "date"
+    geboorteDatumInput.placeholder = "DD-MM-YYYY"
+    login_button.textContent = "login"
+    inhoud_container.append(geboorteDatumInput,login_button)
 }
-login_button.addEventListener("click", () => {
-    const username = username_input.value.trim()
-    const password = password_input.value.trim()
-    //trim, want perongeluk een spatie opt einde is boeeeeeee!
-
-    fetch("/login", {
+login_button.addEventListener("click", async () =>  {
+    const geboorteDatum = geboorteDatumInput.value
+    //datum goezeetn en doortsuren
+    const res = await fetch("/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ geboorteDatum })
+      })
+
+    const data = await res.json()
+    console.log(data.token)
+    console.log(data.role)
+      if (data.token) {
+        localStorage.setItem("token", data.token)
+        window.location.href = "/medewerker" // van stackoverflow
+    } else {
+        console.error("Login mislukt")
+    }
     })
-    .then(res => res.json())
-    .then(data => console.log(data))
-})
 
 //fills oproepen
 fill_header_container()
