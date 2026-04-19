@@ -32,7 +32,11 @@ login_button.addEventListener("click", async () =>  {
     console.log(data.role)
       if (data.token) {
         localStorage.setItem("token", data.token)
-        window.location.href = "/medewerker" // van stackoverflow
+        if(data.role = "medewerker") {
+            window.location.href = "/medewerker" // van stackoverflow
+        }else{
+            window.location.href = "/leiding"   
+        }
     } else {
         console.error("Login mislukt")
     }

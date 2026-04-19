@@ -41,10 +41,11 @@ const login = (geboorteDatum, res) => {
             tokens[geboorteDatum] = crypto.randomBytes(8).toString("hex")
             token = tokens[geboorteDatum]
         }
-
+        console.log(user.role)
+        const role = user.role
         res.statusCode = 200
         res.setHeader("Content-Type", "application/json")
-        return res.end(JSON.stringify({ token }))
+        return res.end(JSON.stringify({ token , role}))
     }
     })
 
@@ -140,6 +141,16 @@ const server = http.createServer((req, res) => {
             login(geboorteDatum, res)
         })
 
+    } else if (req.method === "GET" && req.url === "/leidinggevende"){
+const filePath = path.join(__dirname, "public", "leidinggevende", "beheerder.html")
+        fs.readFile(filePath, "utf8", (err, data) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end("Error loading page")
+            }
+            res.setHeader("Content-Type", "text/html")
+            res.end(data)
+        })
     } else {
         res.statusCode = 404
         res.setHeader("Content-Type", "text/plain")
