@@ -20,9 +20,9 @@ const db = new sqlite3.Database("testdb.db", (err) => {
 //login functie die hashed, want zo en de wachtwoorden opgeslaan
 const login = (geboorteDatum, res) => {
     db.get(
-        `SELECT * FROM users
-        INNER JOIN planner_users
-         ON users.users_id = planner_user.user_id
+        `SELECT * FROM user
+         INNER JOIN planner_user
+         ON user.users_id = planner_user.user_id
          WHERE birthdate = ?
          `,
         [geboorteDatum],
