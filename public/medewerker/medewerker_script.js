@@ -8,6 +8,8 @@ const btn_go_beschikbaarheid = document.createElement("button")
 const btn_go_berichten = document.createElement("button")
 const btn_go_profiel = document.createElement("button")
 //globale variabelen
+const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
+const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"]
 
 //fill functies opzetten
 const fill_header_container = (titel = "Mijn Planner") => {
@@ -61,58 +63,53 @@ result.forEach(({ month, days }) => {
 });*/
 //elke keuze eigen functie
 //functie zoda we weten welke .getDay() naar een deftige dag zettn = 3 -> woensdag
-const getDayMaBeter = (day) => {
-    console.log(day)
-    let dayString = ""
-    switch (day) {
-        case 0:
-            dayString = "zondag"
-            break;
-        case 1:
-            dayString = "maandag"
-            break;
-        case 2:
-            dayString = "dinsdag"
-            break;
-        case 3:
-            dayString = "woensdag"
-            break;
-        case 4:
-            dayString = "donderdag"
-            break;
-        case 5:
-            dayString = "vrijdag"
-            break;
-        case 6:
-            dayString = "zaterdag"
-            break;
-    }
-    return dayString
-}
 const kiesTijd = (day) => {
     //hier krijgt de student de keuze welke uren hij/zij wil
     const startSelect = document.createElement("select")
     const eindeSelect = document.createElement("select")
     const flexBtn = document.createElement("button")
 
-    
+    //nieuwe container word gevuld me deze keuzes
 }
+const datum = new Date
+let thisYear = datum.getFullYear()
+let thisMonth = datum.getMonth()
 const fill_Beschikbaarheid = () => {
+    inhoud_container.innerHTML = ""
     //eerst den maand
-    const datum = new Date
-    console.log(datum)
-    //roster me buttns 7*3 of 4
-    const thisYear = datum.getFullYear()
-    const thisMonth = datum.getMonth()
-    const aDagen = getDaysInMonth(thisMonth, thisYear)
-    console.log(aDagen)
+    //console.log(datum)
+    const btnBack = document.createElement("button")
+    const btnForward = document.createElement("button")
+    const pMonthYear = document.createElement("p")
+    btnBack.addEventListener("click", () => {
+        datum.setMonth(datum.getMonth() - 1)
+        thisMonth = datum.getMonth()
+        thisYear = datum.getFullYear()
+        pMonthYear.textContent = (maanden[thisMonth]) + " " + thisYear
+        fill_Beschikbaarheid()
+    })
+    btnForward.addEventListener("click", () => {
+        datum.setMonth(datum.getMonth() + 1)
+        thisMonth = datum.getMonth()
+        thisYear = datum.getFullYear()
+        pMonthYear.textContent = (maanden[thisMonth]) + " " + thisYear
+        fill_Beschikbaarheid()
+    })
+    btnBack.textContent = "<-"
+    btnForward.textContent = "->"
+    pMonthYear.textContent = maanden[thisMonth] + " " + thisYear
+    inhoud_container.append(btnBack, pMonthYear, btnForward)
 
+    //roster me buttns 7*3 of 4
+    const aDagen = getDaysInMonth(thisMonth, thisYear)
+    //console.log(aDagen)
+    const eerstedag = new Date(thisYear, thisMonth, 1).getDay()
     for (let i = 0; i < aDagen.length; i++) {
         const btn = document.createElement("button")
-        btn.textContent = getDayMaBeter(aDagen[i].getDay()) + "\r\n"
-        btn.textContent += aDagen[i].getDate()
+        const welkeDag = (eerstedag + i) % 7  // zo loop je rond na zaterdag
+        btn.textContent = dagen[welkeDag] + "\n" + aDagen[i].getDate()
         inhoud_container.append(btn)
-        btn.addEventListener("click", (kiesTijd(getDayMaBeter(aDagen[i].getDay()))))
+        btn.addEventListener("click", () => kiesTijd(aDagen[i]))
     }
 }
 const fill_inhoud_container = (welke_inhoud = "Mijn Planner") => {
