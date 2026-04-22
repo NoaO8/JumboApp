@@ -7,9 +7,16 @@ const tijd_container = document.querySelector(".tijd_container")
 const btn_go_beschikbaarheid = document.createElement("button")
 const btn_go_berichten = document.createElement("button")
 const btn_go_profiel = document.createElement("button")
+const opslaanBtn = document.createElement("button")
+const startSelect = document.createElement("select")
+const eindeSelect = document.createElement("select")
 //globale variabelen
 const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
 const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"]
+const datum = new Date
+let thisYear = datum.getFullYear()
+let thisMonth = datum.getMonth()
+let selectedDay = ""
 
 //fill functies opzetten
 const fill_header_container = (titel = "Mijn Planner") => {
@@ -64,16 +71,25 @@ result.forEach(({ month, days }) => {
 //elke keuze eigen functie
 //functie zoda we weten welke .getDay() naar een deftige dag zettn = 3 -> woensdag
 const kiesTijd = (day) => {
+    tijd_container.innerHTML = ""
     //hier krijgt de student de keuze welke uren hij/zij wil
-    const startSelect = document.createElement("select")
-    const eindeSelect = document.createElement("select")
     const flexBtn = document.createElement("button")
-
+    //van 6 tot 21u
+    for (let i = 6; i <= 21; i++) {
+        let optStart = document.createElement('option');
+        optStart.value = i;
+        optStart.textContent = i + "u";
+        startSelect.appendChild(optStart);
+        let optEinde = document.createElement('option');
+        optEinde.value = i;
+        optEinde.textContent = i + "u";
+        eindeSelect.appendChild(optEinde)
+    }
+    flexBtn.textContent = "flexibel"
+    opslaanBtn.textContent = "Sla beschikbaarheid op"
     //nieuwe container word gevuld me deze keuzes
+    tijd_container.append(startSelect, flexBtn, eindeSelect, opslaanBtn)
 }
-const datum = new Date
-let thisYear = datum.getFullYear()
-let thisMonth = datum.getMonth()
 const fill_Beschikbaarheid = () => {
     inhoud_container.innerHTML = ""
     //eerst den maand
@@ -109,9 +125,26 @@ const fill_Beschikbaarheid = () => {
         const welkeDag = (eerstedag + i) % 7  // zo loop je rond na zaterdag
         btn.textContent = dagen[welkeDag] + "\n" + aDagen[i].getDate()
         inhoud_container.append(btn)
-        btn.addEventListener("click", () => kiesTijd(aDagen[i]))
+        btn.addEventListener("click", () => {
+            kiesTijd(aDagen[i])
+            selectedDay = aDagen[i]
+            console.log(selectedDay)
+        })
     }
 }
+opslaanBtn.addEventListener("click", () => {
+const start_uur = startSelect.value
+const eind_uur = eindeSelect.value
+
+const volledige_start = new Date(selectedDay)
+volledige_start.setHours(start_uur, 0, 0, 0)
+
+const volledig_einde = new Date(selectedDay)
+volledig_einde.setHours(eind_uur, 0, 0, 0)
+
+console.log(volledige_start)
+console.log(volledig_einde)
+})
 const fill_inhoud_container = (welke_inhoud = "Mijn Planner") => {
     //ook eerst nav afmaken
     //eerst moetn we weten ofda wie da is ingelogt

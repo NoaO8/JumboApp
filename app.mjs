@@ -5,9 +5,16 @@ import http from "http"
 import sqlite3 from "sqlite3"
 import crypto from "crypto" //alleen nodig als we hashen
 import { error } from "console" //das ier vanzelf gekomen en kheb schrik om da wegtedoen
+import express from "express"
 const __dirname = import.meta.dirname
 //tokens opslaan, vo nu ist goe da we het zo doen, vinden wel andere manier later
 const tokens = {}
+//express goe zettn
+const app = express();
+const PORT = 3000;
+
+app.use(express.json());
+app.use(express.static("public"));
 //db opzetten
 const db = new sqlite3.Database("testdb.db", (err) => {
     if (err) {
@@ -17,7 +24,7 @@ const db = new sqlite3.Database("testdb.db", (err) => {
     console.log("db connected")
 })
 //functies
-//login functie die hashed, want zo en de wachtwoorden opgeslaan
+//login functie die hashed, want zo en de wachtwoordinsen opgeslaan
 const login = (geboorteDatum, res) => {
     db.get(
         `SELECT * FROM user
@@ -31,54 +38,27 @@ const login = (geboorteDatum, res) => {
                 res.statusCode = 500
                 return res.end(JSON.stringify({ message: "database fout" }))
             }
-        
-    if (user && geboorteDatum === user.birthdate) {
-        console.log(geboorteDatum)
-        console.log(user.birthdate)
-        // token maken of hergebruiken
-        let token = tokens[geboorteDatum]
-        if (token === undefined) {
-            tokens[geboorteDatum] = crypto.randomBytes(8).toString("hex")
-            token = tokens[geboorteDatum]
-        }
-        console.log(user.role)
-        const role = user.role
-        res.statusCode = 200
-        res.setHeader("Content-Type", "application/json")
-        return res.end(JSON.stringify({ token , role}))
-    }
-    })
 
-}
-const readJsonBody = (req, res, cb) => {
-    let body = ""
-    req.on("data", chunk => body += chunk)
-    req.on("end", () => {
-        try {
-            const data = JSON.parse(body || "{}")
-            cb(null, data)
-        } catch {
-            res.statusCode = 400
-            res.setHeader("Content-Type", "application/json")
-            res.end(JSON.stringify({ error: "Invalid JSON" }))
-        }
-    })
-}
-const getUsernameFromAuthHeader = (req) => {
-    const header = req.headers["authorization"]
-    if (!header) return null
+            if (user && geboorteDatum === user.birthdate) {
+                console.log(geboorteDatum)
+                console.log(user.birthdate)
+                // token maken of hergebruiken
+                let token = tokens[geboorteDatum]
+                if (token === undefined) {
+                    tokens[geboorteDatum] = crypto.randomBytes(8).toString("hex")
+                    token = tokens[geboorteDatum]
+                }
+                console.log(user.role)
+                const role = user.role
+                res.statusCode = 200
+                res.setHeader("Content-Type", "application/json")
+                return res.end(JSON.stringify({ token, role }))
+            }
+        })
 
-    // verwacht: "Bearer abc123"
-    const [scheme, token] = header.split(" ")
-    if (scheme !== "Bearer" || !token) return null
-
-    // token → username (zoeken in tokens object)
-    for (const username of Object.keys(tokens)) {
-        if (tokens[username] === token) return username
-    }
-    return null
 }
 //server aanmaken
+/*
 const server = http.createServer((req, res) => {
     if (req.method === "GET" && req.url === "/beheerder") {
         const filePath = path.join(__dirname, "public", "leidinggevende", "beheerder.html")
@@ -156,9 +136,20 @@ const filePath = path.join(__dirname, "public", "leidinggevende", "beheerder.htm
         res.setHeader("Content-Type", "text/plain")
         res.end("Not found")
     }
-})
+})*/
+
 //server doen luisteren op port
-const port = 3000
-server.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`)
+app.post("/login", (req, res) => {
+    res.setHeader("Content-Type", "application/json")
+        const { geboorteDatum } = req.body
+        if (!geboorteDatum) {
+            res.statusCode = 400
+            return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
+        }
+        login(geboorteDatum, res)
+    
 })
+
+app.listen(PORT, () => {
+    console.log(`Server op http://localhost:${PORT}`);
+});
