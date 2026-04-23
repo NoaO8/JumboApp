@@ -149,6 +149,9 @@ app.post("/login", (req, res) => {
         login(geboorteDatum, res)
     
 })
+app.post("/beschikbaarheid_opslaan", (req,res) => {
+    console.log(req.body)
+})
 
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);

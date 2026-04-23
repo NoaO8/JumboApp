@@ -144,6 +144,12 @@ volledig_einde.setHours(eind_uur, 0, 0, 0)
 
 console.log(volledige_start)
 console.log(volledig_einde)
+
+fetch("/beschikbaarheid_opslaan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ volledige_start, volledig_einde })
+      })
 })
 const fill_inhoud_container = (welke_inhoud = "Mijn Planner") => {
     //ook eerst nav afmaken
