@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jumbo Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1>Jumbo Planner</h1>
+    <p>Leidinggevende Dashboard</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="planning">📅 Planning</button>
+    <button class="tab" data-tab="aanvragen">📝 Shift Aanvragen <span class="badge">3</span></button>
+    <button class="tab" data-tab="berichten">💬 Berichten</button>
+  </nav>
+
+  <main class="card">
+
+    <!-- Planning -->
+    <section id="planning" class="tabview active">
+      <div class="card-header">
+        <h2 id="planningDate"></h2>
+        <span>👥 5 studenten ingepland</span>
+      </div>
+      <div id="planningList"></div>
+    </section>
+
+    <!-- Aanvragen -->
+    <section id="aanvragen" class="tabview">
+      <h2>Shift aanvragen</h2>
+      <div id="requestList"></div>
+    </section>
+
+    <!-- Berichten -->
+    <section id="berichten" class="tabview">
+      <div class="chat-container">
+
+        <div class="chat-header">
+          <select id="studentSelect">
+            <option value="">Selecteer een student om te chatten</option>
+          </select>
+        </div>
+
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-placeholder">
+            Welkom bij Berichten<br>
+            <small>Selecteer een student om een gesprek te starten</small>
+          </div>
+        </div>
+
+        <div class="chat-input">
+          <input id="messageInput" type="text" placeholder="Typ een bericht…">
+          <button id="sendMessage">➤</button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- data.js die later door een db word veranderd en script.js -->
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>
