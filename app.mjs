@@ -53,103 +53,25 @@ const login = (geboorteDatum, res) => {
                 res.statusCode = 200
                 res.setHeader("Content-Type", "application/json")
                 return res.end(JSON.stringify({ token, role }))
+            } else {
+                res.statusCode = 401
+                return res.end(JSON.stringify({ message: "ongeldige geboortedatum" }))
             }
         })
 
 }
-//server aanmaken
-/*
-const server = http.createServer((req, res) => {
-    if (req.method === "GET" && req.url === "/beheerder") {
-        const filePath = path.join(__dirname, "public", "leidinggevende", "beheerder.html")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "text/html")
-            res.end(data)
-        })
-    } else if (req.method === "GET" && req.url === "/medewerker") {
-        const filePath = path.join(__dirname, "public", "medewerker", "medewerker.html")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "text/html")
-            res.end(data)
-        })
-    } else if (req.method === "GET" && req.url === "/medewerker_script.js") {
-        const filePath = path.join(__dirname, "public", "medewerker", "medewerker_script.js")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "application/javascript")
-            res.end(data)
-        })
-    } else if (req.method === "GET" && req.url === "/inlog") {
-        const filePath = path.join(__dirname, "public", "inlog.html")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "text/html")
-            res.end(data)
-        })
-    } else if (req.method === "GET" && req.url === "/inlog_script.js") {
-        const filePath = path.join(__dirname, "public", "inlog_script.js")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "application/javascript")
-            res.end(data)
-        })
-    } else if (req.method === "POST" && req.url === "/login") {
-        res.setHeader("Content-Type", "application/json")
-        return readJsonBody(req, res, (err, data) => {
-            const { geboorteDatum } = data
-            if (!geboorteDatum) {
-                res.statusCode = 400
-                return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
-            }
-            login(geboorteDatum, res)
-        })
 
-    } else if (req.method === "GET" && req.url === "/leidinggevende"){
-const filePath = path.join(__dirname, "public", "leidinggevende", "beheerder.html")
-        fs.readFile(filePath, "utf8", (err, data) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end("Error loading page")
-            }
-            res.setHeader("Content-Type", "text/html")
-            res.end(data)
-        })
-    } else {
-        res.statusCode = 404
-        res.setHeader("Content-Type", "text/plain")
-        res.end("Not found")
-    }
-})*/
-
-//server doen luisteren op port
 app.post("/login", (req, res) => {
     res.setHeader("Content-Type", "application/json")
-        const { geboorteDatum } = req.body
-        if (!geboorteDatum) {
-            res.statusCode = 400
-            return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
-        }
-        login(geboorteDatum, res)
-    
+    const { geboorteDatum } = req.body
+    if (!geboorteDatum) {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
+    }
+    login(geboorteDatum, res)
+
 })
-app.post("/beschikbaarheid_opslaan", (req,res) => {
+app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
 })
 

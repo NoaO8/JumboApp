@@ -15,7 +15,7 @@ const fill_header_container = () => {
 }
 
 const fill_inhoud_container = () => {
-    // Input group wrapper
+    //input group wrapper
     const group = document.createElement("div")
     group.className = "input-group"
 
@@ -26,30 +26,15 @@ const fill_inhoud_container = () => {
     const wrapper = document.createElement("div")
     wrapper.className = "input-wrapper"
 
-    // Kalender icoon
-    const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-    iconSvg.setAttribute("viewBox", "0 0 24 24")
-    iconSvg.setAttribute("fill", "none")
-    iconSvg.setAttribute("stroke", "currentColor")
-    iconSvg.setAttribute("stroke-width", "2")
-    iconSvg.setAttribute("stroke-linecap", "round")
-    iconSvg.setAttribute("stroke-linejoin", "round")
-    iconSvg.innerHTML = `
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-            `
-
     geboorteDatumInput.type = "date"
     geboorteDatumInput.id = "geboortedatum"
-
-    wrapper.appendChild(iconSvg)
+    
     wrapper.appendChild(geboorteDatumInput)
     group.appendChild(label)
     group.appendChild(wrapper)
 
     login_button.textContent = "Inloggen"
+    login_button.className = "Inlog_btn"
 
     inhoud_container.append(group, login_button)
 }

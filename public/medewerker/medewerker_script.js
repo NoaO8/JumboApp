@@ -5,15 +5,26 @@ const inhoud_container = document.querySelector(".inhoud_container")
 const tijd_container = document.querySelector(".tijd_container")
 
 
-const maanden = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"]
-const dagen = ["zondag","maandag","dinsdag","woensdag","donderdag","vrijdag","zaterdag"]
+const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
+const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"]
+let geselcteerde_dagen = []
 
 const datum = new Date()
 let thisYear = datum.getFullYear()
 let thisMonth = datum.getMonth()
 let selectedDay = null
 
-
+let is_flex = true;
+/*ZEKER NOG GEBRUIKEN
+fetch("/beschikbaarheid_opslaan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                volledige_start,
+                volledige_einde
+            })
+        })
+*/
 const fill_header_container = (titel = "Mijn Planner") => {
     header_container.innerHTML = ""
 
@@ -22,8 +33,6 @@ const fill_header_container = (titel = "Mijn Planner") => {
 
     header_container.appendChild(h1)
 }
-
-
 const fill_nav_container = () => {
     nav_container.innerHTML = ""
 
@@ -49,8 +58,6 @@ const fill_nav_container = () => {
         nav_container.appendChild(btn)
     })
 }
-
-
 const getDaysInMonth = (month, year) => {
     const days = []
     const date = new Date(year, month, 1)
@@ -61,15 +68,12 @@ const getDaysInMonth = (month, year) => {
     }
     return days
 }
-
-
 const kiesTijd = (day) => {
     tijd_container.innerHTML = ""
 
     const card = document.createElement("div")
     card.className = "time-card"
 
-    // ===== TITEL
     const title = document.createElement("h3")
     title.textContent = "Beschikbaarheid instellen"
 
@@ -81,12 +85,19 @@ const kiesTijd = (day) => {
         month: "long"
     })
 
-    // ===== FLEX BUTTON
     const flexBtn = document.createElement("button")
-    flexBtn.textContent = "✓ Flexibel"
+    flexBtn.textContent = "Flexibel"
     flexBtn.className = "flex-btn"
 
-    // ===== SELECTS
+    flexBtn.onclick = () => {
+        is_flex = !is_flex
+        if(is_flex){
+            flexBtn.style.background = "#FDC100"
+        }else{
+            flexBtn.style.background = "#F4F4F4"
+        }
+    }
+
     const row = document.createElement("div")
     row.className = "time-row"
 
@@ -108,7 +119,6 @@ const kiesTijd = (day) => {
 
     row.append(startSelect, eindeSelect)
 
-    // ===== OPSLAAN
     const opslaanBtn = document.createElement("button")
     opslaanBtn.textContent = "Opslaan"
     opslaanBtn.className = "primary-btn"
@@ -118,19 +128,20 @@ const kiesTijd = (day) => {
         const eind_uur = eindeSelect.value
 
         const volledige_start = new Date(day)
-        volledige_start.setHours(start_uur, 0, 0, 0)
-
         const volledige_einde = new Date(day)
-        volledige_einde.setHours(eind_uur, 0, 0, 0)
-
-        fetch("/beschikbaarheid_opslaan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                volledige_start,
-                volledige_einde
-            })
+        if (is_flex) {
+            volledige_start.setHours(6, 0, 0, 0)
+            volledige_einde.setHours(21, 0, 0, 0)
+        } else {
+            volledige_start.setHours(start_uur, 0, 0, 0)
+            volledige_einde.setHours(eind_uur, 0, 0, 0)
+        }
+        console.log(volledige_start)
+        geselcteerde_dagen.push({
+            start: volledige_start,
+            eind: volledige_einde
         })
+        console.log(geselcteerde_dagen)
     }
 
     // ===== CLOSE (optioneel nice UX)
@@ -145,7 +156,7 @@ const kiesTijd = (day) => {
     card.append(title, datumLabel, flexBtn, row, opslaanBtn, closeBtn)
     tijd_container.appendChild(card)
 }
-
+//gelijkaarde card erbij da de opgeslagn shifts toont + kans om te posten
 
 const fill_Beschikbaarheid = () => {
     inhoud_container.innerHTML = ""
@@ -154,7 +165,6 @@ const fill_Beschikbaarheid = () => {
     const card = document.createElement("div")
     card.className = "card"
 
-    // ===== HEADER (maand navigatie)
     const header = document.createElement("div")
     header.style.display = "flex"
     header.style.justifyContent = "space-between"
@@ -185,11 +195,10 @@ const fill_Beschikbaarheid = () => {
 
     header.append(btnBack, title, btnForward)
 
-    // ===== WEEKDAGEN
     const weekRow = document.createElement("div")
     weekRow.className = "calendar-grid header"
 
-    const dagenKort = ["Ma","Di","Wo","Do","Vr","Za","Zo"]
+    const dagenKort = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"]
     dagenKort.forEach(d => {
         const el = document.createElement("div")
         el.textContent = d
@@ -204,13 +213,13 @@ const fill_Beschikbaarheid = () => {
 
     const days = getDaysInMonth(thisMonth, thisYear)
 
-    // lege vakjes
+    //lege vakjes
     for (let i = 0; i < offset; i++) {
         const empty = document.createElement("div")
         grid.appendChild(empty)
     }
 
-    // echte dagen
+    //echte dagen
     days.forEach(dag => {
         const cell = document.createElement("div")
         cell.className = "day-cell"
@@ -283,14 +292,14 @@ const fill_Profiel = () => {
     const locatie = document.createElement("input")
     locatie.placeholder = "Locatie"
 
-    ;[naam, email, tel, locatie].forEach(inp => {
-        inp.style.display = "block"
-        inp.style.width = "100%"
-        inp.style.marginTop = "10px"
-        inp.style.padding = "12px"
-        inp.style.borderRadius = "10px"
-        inp.style.border = "1px solid #ddd"
-    })
+        ;[naam, email, tel, locatie].forEach(inp => {
+            inp.style.display = "block"
+            inp.style.width = "100%"
+            inp.style.marginTop = "10px"
+            inp.style.padding = "12px"
+            inp.style.borderRadius = "10px"
+            inp.style.border = "1px solid #ddd"
+        })
 
     //BUTTONS
     const save = document.createElement("button")
