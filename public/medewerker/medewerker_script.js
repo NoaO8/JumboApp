@@ -4,7 +4,6 @@ const nav_container = document.querySelector(".nav_container")
 const inhoud_container = document.querySelector(".inhoud_container")
 const tijd_container = document.querySelector(".tijd_container")
 
-
 const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
 const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"]
 let geselcteerde_dagen = []
@@ -91,9 +90,9 @@ const kiesTijd = (day) => {
 
     flexBtn.onclick = () => {
         is_flex = !is_flex
-        if(is_flex){
+        if (is_flex) {
             flexBtn.style.background = "#FDC100"
-        }else{
+        } else {
             flexBtn.style.background = "#F4F4F4"
         }
     }
@@ -122,8 +121,9 @@ const kiesTijd = (day) => {
     const opslaanBtn = document.createElement("button")
     opslaanBtn.textContent = "Opslaan"
     opslaanBtn.className = "primary-btn"
-
+    const closeBtn = document.createElement("button")
     opslaanBtn.onclick = () => {
+        post_datums()
         const start_uur = startSelect.value
         const eind_uur = eindeSelect.value
 
@@ -137,26 +137,57 @@ const kiesTijd = (day) => {
             volledige_einde.setHours(eind_uur, 0, 0, 0)
         }
         console.log(volledige_start)
-        geselcteerde_dagen.push({
+        const dag = {
             start: volledige_start,
             eind: volledige_einde
-        })
-        console.log(geselcteerde_dagen)
+        }
+        const alBestaand = geselcteerde_dagen.some(d =>
+            d.start.toDateString() === volledige_start.toDateString()
+        )
+
+        if (!alBestaand) {
+            geselcteerde_dagen.push(dag)
+            console.log(geselcteerde_dagen)
+        }
+
+        closeBtn.textContent = "Sluiten"
+        closeBtn.className = "secondary-btn"
+
+        closeBtn.onclick = () => {
+            tijd_container.innerHTML = ""
+        }
+
     }
-
-    // ===== CLOSE (optioneel nice UX)
-    const closeBtn = document.createElement("button")
-    closeBtn.textContent = "Sluiten"
-    closeBtn.className = "secondary-btn"
-
-    closeBtn.onclick = () => {
-        tijd_container.innerHTML = ""
-    }
-
     card.append(title, datumLabel, flexBtn, row, opslaanBtn, closeBtn)
     tijd_container.appendChild(card)
 }
 //gelijkaarde card erbij da de opgeslagn shifts toont + kans om te posten
+const post_datums = () => {
+    const card = document.createElement("div")
+    card.className = "time-card"
+
+    const title = document.createElement("h3")
+    title.textContent = "Verstuur beschikbaarheid"
+
+    const verstuur_button = document.createElement("button")
+    verstuur_button.className = "primary-btn"
+    verstuur_button.textContent = "verstuur beschikbaarheid"
+    verstuur_button.addEventListener("click", () => {
+        fetch('/beschikbaarheid_opslaan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                gekozen_shifts: geselcteerde_dagen
+            })
+        })
+            .then(() => {
+                alert("shifts geposts")
+            }) //naar een post me de dagen erin
+    })
+
+    card.append(title, verstuur_button)
+    tijd_container.append(card)
+}
 
 const fill_Beschikbaarheid = () => {
     inhoud_container.innerHTML = ""
@@ -211,6 +242,8 @@ const fill_Beschikbaarheid = () => {
     const firstDay = new Date(thisYear, thisMonth, 1).getDay()
     const offset = firstDay === 0 ? 6 : firstDay - 1
 
+    const today = new Date().getDate()
+    console.log(today)
     const days = getDaysInMonth(thisMonth, thisYear)
 
     //lege vakjes
@@ -228,9 +261,21 @@ const fill_Beschikbaarheid = () => {
         num.className = "day-number"
         num.textContent = dag.getDate()
 
+        //alles da voor vandaag is disablen
+        const today = new Date()
+        today.setHours(0, 0, 0, 0) // tijd op middernacht zetten
+        dag.setHours(0, 0, 0, 0)
+
+        if (dag < today) {
+            cell.style.backgroundColor = "lightgray"
+            //cell.disabled = true
+        }
+
         cell.appendChild(num)
 
         cell.addEventListener("click", () => {
+            if (dag < today) return
+
             selectedDay = dag
             kiesTijd(dag)
 

@@ -375,9 +375,11 @@ input[type="date"]:focus {
     margin-top: 20px;
     background: white;
     padding: 20px;
+    margin-right: 20px;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    max-width: 420px;
+    width: 420px;
+    float: left;
 }
 
 /* titel */

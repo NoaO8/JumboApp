@@ -61,6 +61,14 @@ const login = (geboorteDatum, res) => {
 
 }
 
+app.get('/inlog', (req, res) => {
+  const filePath = path.join(__dirname, 'public', "inlog.html");
+  res.sendFile(filePath);
+}); 
+app.get('/medewerker', (req, res) => {
+  const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
+  res.sendFile(filePath);
+});
 app.post("/login", (req, res) => {
     res.setHeader("Content-Type", "application/json")
     const { geboorteDatum } = req.body
@@ -69,12 +77,10 @@ app.post("/login", (req, res) => {
         return res.end(JSON.stringify({ message: "geboortedatum is verplicht" }))
     }
     login(geboorteDatum, res)
-
 })
 app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
 })
-
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);
 });
