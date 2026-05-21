@@ -60,9 +60,25 @@
 
     <!-- Kalender (uit fill_Beschikbaarheid) -->
     <section id="kalender" class="tabview">
-      <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
-        <div id="inhoud_container" style="flex:1; min-width:280px;"></div>
-        <div id="tijd_container" style="flex:1; min-width:260px;"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#85B7EB"></div>Student</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#97C459"></div>Medewerker</div>
+      </div>
+      <div class="planner">
+        <div class="cal-section">
+          <div class="cal-nav">
+            <button id="btnPrev">&#8249;</button>
+            <h2 id="calTitle"></h2>
+            <button id="btnNext">&#8250;</button>
+          </div>
+          <div class="week-header">
+            <div>Ma</div><div>Di</div><div>Wo</div><div>Do</div><div>Vr</div><div>Za</div><div>Zo</div>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="panel" id="sidePanel">
+          <div class="no-day">Klik op een dag om te plannen</div>
+        </div>
       </div>
     </section>
 
