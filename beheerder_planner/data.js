@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 // ============================================================
 // data.js — tijdelijk in-memory, later vervangen door SQLite API
 // ============================================================
+=======
+//word nog vervangen door een db
+>>>>>>> klaar_voor_presentatie
 
 const DATA = {
   planningDate: 'vrijdag 30 januari 2026',
@@ -21,11 +25,18 @@ const DATA = {
     { studentId: 5, role: 'Bakkerij',     time: '11:00 – 19:00', status: 'Te laat',  statusType: 'red' },
   ],
 
+<<<<<<< HEAD
   // requests bijhouden als array van objecten zodat we ze echt kunnen verwijderen
   requests: [
     { id: 1, studentId: 2, date: '22-1-2026', time: '09:00 – 17:00' },
     { id: 2, studentId: 3, date: '23-1-2026', time: '10:00 – 18:00' },
     { id: 3, studentId: 5, date: '24-1-2026', time: '11:00 – 19:00' },
+=======
+  requests: [
+    { studentId: 2, date: '22-1-2026', time: '09:00 – 17:00' },
+    { studentId: 3, date: '23-1-2026', time: '10:00 – 18:00' },
+    { studentId: 5, date: '24-1-2026', time: '11:00 – 19:00' },
+>>>>>>> klaar_voor_presentatie
   ],
 };
 
@@ -34,6 +45,7 @@ function getStudent(id) {
 }
 function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('');
+<<<<<<< HEAD
 }
 
 // Bereken totale geplande uren voor een student in een week
@@ -62,4 +74,6 @@ function getMaandagVanWeek(datum) {
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
+=======
+>>>>>>> klaar_voor_presentatie
 }
