@@ -27,11 +27,11 @@ const db = new sqlite3.Database("testdb.db", (err) => {
 //login functie die hashed, want zo en de wachtwoordinsen opgeslaan
 const login = (geboorteDatum, res) => {
     db.get(
-        `SELECT * FROM user
-         INNER JOIN planner_user
-         ON user.users_id = planner_user.user_id
-         WHERE birthdate = ?
-         `,
+        `SELECT *, user.users_id as user_id FROM user
+        INNER JOIN planner_user
+        ON user.users_id = planner_user.user_id
+        WHERE birthdate = ?`
+        ,
         [geboorteDatum],
         (err, user) => {
             if (err) {
@@ -40,6 +40,7 @@ const login = (geboorteDatum, res) => {
             }
 
             if (user && geboorteDatum === user.birthdate) {
+                console.log(user)
                 console.log(geboorteDatum)
                 console.log(user.birthdate)
                 // token maken of hergebruiken
@@ -52,7 +53,7 @@ const login = (geboorteDatum, res) => {
                 const role = user.role
                 res.statusCode = 200
                 res.setHeader("Content-Type", "application/json")
-                return res.end(JSON.stringify({ token, role }))
+                return res.end(JSON.stringify({ token, role, user_id: user.users_id }))
             } else {
                 res.statusCode = 401
                 return res.end(JSON.stringify({ message: "ongeldige geboortedatum" }))
@@ -65,12 +66,12 @@ const post_in_database = (body) => {
 }
 
 app.get('/inlog', (req, res) => {
-  const filePath = path.join(__dirname, 'public', "inlog.html");
-  res.sendFile(filePath);
-}); 
+    const filePath = path.join(__dirname, 'public', "inlog.html");
+    res.sendFile(filePath);
+});
 app.get('/medewerker', (req, res) => {
-  const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
-  res.sendFile(filePath);
+    const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
+    res.sendFile(filePath);
 });
 //help vo token
 const get_gebruiker_token = (token) => {
@@ -80,7 +81,6 @@ const get_gebruiker_token = (token) => {
 app.get("/berichten", (req, res) => {
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
-    console.log(tokens)  
 
     if (!geboorteDatum) {
         res.statusCode = 401
@@ -89,8 +89,10 @@ app.get("/berichten", (req, res) => {
 
     db.all(
         `SELECT messages.* FROM messages
-         INNER JOIN user ON user.users_id = messages.receiver_id`,
-        [],
+         INNER JOIN user ON user.users_id = messages.receiver_id OR user.users_id = messages.sender_id
+         WHERE user.birthdate = ?
+        ORDER BY messages.sent_at ASC`,
+        [geboorteDatum],
         (err, rows) => {
             if (err) {
                 res.statusCode = 500
@@ -106,7 +108,7 @@ app.get("/profiel", (req, res) => {
 
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
-    console.log(tokens)  
+    console.log(tokens)
 
     if (!geboorteDatum) {
         res.statusCode = 401
@@ -116,7 +118,35 @@ app.get("/profiel", (req, res) => {
     db.all(
         `SELECT * FROM user
          WHERE birthdate = ?
-         `,
+        `,
+        [geboorteDatum],
+        (err, rows) => {
+            console.log("profiel rows:", rows)
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
+app.get("/shifts", (req, res) => {
+    res.setHeader("Content-Type", "application/json")
+
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.all(
+        `SELECT planner.* FROM planner
+         INNER JOIN planner_user ON planner.planner_id = planner_user.planner_id
+         INNER JOIN user ON user.users_id = planner_user.user_id
+         WHERE user.birthdate = ?
+         ORDER BY planner.start_dateTime ASC`,
         [geboorteDatum],
         (err, rows) => {
             if (err) {
@@ -124,6 +154,74 @@ app.get("/profiel", (req, res) => {
                 return res.end(JSON.stringify({ message: "database fout" }))
             }
             res.end(JSON.stringify(rows))
+        }
+    )
+})
+app.get("/availability", (req, res) => {
+    res.setHeader("Content-Type", "application/json")
+
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.all(
+        `SELECT availability.* FROM availability
+         INNER JOIN user ON user.users_id = availability.user_id
+         WHERE user.birthdate = ?
+         ORDER BY availability.start_dateTime ASC`,
+        [geboorteDatum],
+        (err, rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
+app.post("/bericht_sturen", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    const { content } = req.body
+
+    if (!content || content.trim() === "") {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "bericht mag niet leeg zijn" }))
+    }
+
+    db.get(
+        `SELECT users_id FROM user WHERE birthdate = ? `,
+        [geboorteDatum],
+        (err, user) => {
+            if (err || !user) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "gebruiker niet gevonden" }))
+            }
+
+            // receiver_id = 1 is de baas, pas aan indien nodig
+            db.run(
+                `INSERT INTO messages(sender_id, receiver_id, content, sent_at, is_read)
+                 VALUES(?, 1, ?, datetime('now'), 0)`,
+                [user.users_id, content],
+                (err) => {
+                    if (err) {
+                        res.statusCode = 500
+                        return res.end(JSON.stringify({ message: "database fout" }))
+                    }
+                    res.setHeader("Content-Type", "application/json")
+                    res.end(JSON.stringify({ message: "bericht verstuurd" }))
+                }
+            )
         }
     )
 })
@@ -138,14 +236,66 @@ app.post("/login", (req, res) => {
 })
 app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
+    const { user_id, gekozen_shifts } = req.body
+
+    if (!user_id || !gekozen_shifts || gekozen_shifts.length === 0) {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "ongeldige data" }))
+    }
+
+    const stmt = db.prepare(
+        'INSERT INTO availability (user_id, start_dateTime, end_dateTime) VALUES (?, ?, ?)'
+    )
+
+    gekozen_shifts.forEach(shift => {
+        stmt.run(user_id, shift.start, shift.eind, (err) => {
+            if (err) console.error('Insert error:', err)
+        })
+    })
+
+    stmt.finalize()
+    res.setHeader("Content-Type", "application/json")
+    res.end(JSON.stringify({ message: "beschikbaarheid opgeslagen" }))
 })
 app.post("/profiel_wijziging_opslaan", (req, res) => {
-    //database vullen me de info
-     
-})
-app.post("/profiel_wijziging_opslaan", (req, res) => {
-    //database vullen me de info
-     
+    const { user_id, aangepaste_info } = req.body
+
+    if (!user_id || !aangepaste_info || aangepaste_info.length === 0) {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "ongeldige data" }))
+    }
+
+    const kolommen = {
+        naam: null, // naam is speciaal, die splitsen we
+        email: "email",
+        telefoon: "telefoonnummer"
+    }
+
+    aangepaste_info.forEach(({ veld, waarde }) => {
+        if (veld === "naam") {
+            const delen = waarde.split(" ")
+            const first_name = delen[0]
+            const last_name = delen.slice(1).join(" ")
+
+            db.run(
+                `UPDATE user SET first_name = ?, last_name = ? WHERE users_id = ?`,
+                [first_name, last_name, user_id],
+                (err) => { if (err) console.error('Update error:', err) }
+            )
+        } else {
+            const kolom = kolommen[veld]
+            if (!kolom) return
+
+            db.run(
+                `UPDATE user SET ${kolom} = ? WHERE users_id = ?`,
+                [waarde, user_id],
+                (err) => { if (err) console.error('Update error:', err) }
+            )
+        }
+    })
+
+    res.setHeader("Content-Type", "application/json")
+    res.end(JSON.stringify({ message: "profiel bijgewerkt" }))
 })
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);

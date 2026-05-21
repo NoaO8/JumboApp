@@ -56,9 +56,11 @@ login_button.addEventListener("click", async () => {
             body: JSON.stringify({ geboorteDatum })
         })
         const data = await res.json()
+        console.log(data)
 
         if (data.token) {
             localStorage.setItem("token", data.token)
+            localStorage.setItem("user_id", data.user_id)
             if (data.role === "medewerker") {
                 window.location.href = "medewerker/medewerker.html"
             } else {

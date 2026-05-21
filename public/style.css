@@ -12,7 +12,28 @@
     --jumbo-gray: #F4F4F4;
     --jumbo-mid: #888;
 }
+/*
+.logo-box{
+    background-color: var(--jumbo-yellow);
+    padding: 20px;
+    border-radius: 0 0 12px 0;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
 
+.logo-box h1{
+    margin: 0;
+    font-size: 32px;
+    font-weight: 900;
+    color: black;
+    letter-spacing: 1px;
+}
+
+.logo-box p{
+    margin-top: 5px;
+    font-size: 16px;
+    color: #222;
+}*/
 .inlog_body {
     font-family: 'DM Sans', sans-serif;
     background-color: var(--jumbo-gray);
