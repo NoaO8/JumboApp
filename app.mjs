@@ -69,6 +69,35 @@ app.get('/medewerker', (req, res) => {
   const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
   res.sendFile(filePath);
 });
+//help vo token
+const get_gebruiker_token = (token) => {
+    return Object.keys(tokens).find(key => tokens[key] === token)
+}
+
+app.get("/berichten", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+    console.log(geboorteDatum)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.all(
+        `SELECT messages.* FROM messages
+         INNER JOIN user ON user.users_id = messages.receiver_id`,
+        [],
+        (err, rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
 app.post("/login", (req, res) => {
     res.setHeader("Content-Type", "application/json")
     const { geboorteDatum } = req.body

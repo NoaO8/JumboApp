@@ -289,8 +289,17 @@ const fill_Beschikbaarheid = () => {
     card.append(header, weekRow, grid)
     inhoud_container.appendChild(card)
 }
-
-const fill_Berichten = () => {
+const fetch_berichten = () => {
+        fetch('/berichten', {
+            headers: {
+                'Authorization': localStorage.getItem('token')
+            }
+        })
+            .then(res => res.json())
+            .then(data => fill_Berichten(data))
+    }
+const fill_Berichten = (data) => {
+    console.log(data)
     inhoud_container.innerHTML = ""
     tijd_container.innerHTML = ""
 
@@ -366,14 +375,13 @@ const fill_Profiel = () => {
     inhoud_container.appendChild(card)
 }
 
-
 const fill_inhoud_container = (keuze) => {
     switch (keuze) {
         case "Beschikbaarheid":
             fill_Beschikbaarheid()
             break
         case "Berichten":
-            fill_Berichten()
+            fetch_berichten()
             break
         case "Profiel":
             fill_Profiel()
