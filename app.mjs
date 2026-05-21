@@ -60,7 +60,6 @@ const login = (geboorteDatum, res) => {
         })
 
 }
-
 app.get('/inlog', (req, res) => {
   const filePath = path.join(__dirname, 'public', "inlog.html");
   res.sendFile(filePath);
@@ -73,11 +72,11 @@ app.get('/medewerker', (req, res) => {
 const get_gebruiker_token = (token) => {
     return Object.keys(tokens).find(key => tokens[key] === token)
 }
-
+//moet nog iot scherm komen
 app.get("/berichten", (req, res) => {
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
-    console.log(geboorteDatum)
+    console.log(tokens)  
 
     if (!geboorteDatum) {
         res.statusCode = 401
@@ -98,6 +97,32 @@ app.get("/berichten", (req, res) => {
         }
     )
 })
+app.get("/profiel", (req, res) => {
+    res.setHeader("Content-Type", "application/json")
+
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+    console.log(tokens)  
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.all(
+        `SELECT * FROM user
+         WHERE birthdate = ?
+         `,
+        [geboorteDatum],
+        (err, rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
 app.post("/login", (req, res) => {
     res.setHeader("Content-Type", "application/json")
     const { geboorteDatum } = req.body
@@ -109,6 +134,10 @@ app.post("/login", (req, res) => {
 })
 app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
+})
+app.post("/profiel_wijziging_opslaan", (req, res) => {
+    //database vullen me de info
+     
 })
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);
