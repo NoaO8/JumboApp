@@ -60,6 +60,9 @@ const login = (geboorteDatum, res) => {
         })
 
 }
+const post_in_database = (body) => {
+    //posten naar db als noa et afmaakt
+}
 
 app.get('/inlog', (req, res) => {
   const filePath = path.join(__dirname, 'public', "inlog.html");
@@ -80,6 +83,7 @@ app.post("/login", (req, res) => {
 })
 app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
+    login(req.body)
 })
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);

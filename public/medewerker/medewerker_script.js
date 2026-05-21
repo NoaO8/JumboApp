@@ -69,6 +69,7 @@ const getDaysInMonth = (month, year) => {
 }
 const kiesTijd = (day) => {
     tijd_container.innerHTML = ""
+    post_datums()
 
     const card = document.createElement("div")
     card.className = "time-card"
@@ -116,6 +117,15 @@ const kiesTijd = (day) => {
         eindeSelect.appendChild(opt2)
     }
 
+    startSelect.addEventListener("change", () => {
+        is_flex = false
+        flexBtn.style.background = "#F4F4F4"
+    })
+    eindeSelect.addEventListener("change", () => {
+        is_flex = false
+        flexBtn.style.background = "#F4F4F4"
+    })
+
     row.append(startSelect, eindeSelect)
 
     const opslaanBtn = document.createElement("button")
@@ -123,12 +133,17 @@ const kiesTijd = (day) => {
     opslaanBtn.className = "primary-btn"
     const closeBtn = document.createElement("button")
     opslaanBtn.onclick = () => {
-        post_datums()
+        //post_datums()
         const start_uur = startSelect.value
         const eind_uur = eindeSelect.value
 
         const volledige_start = new Date(day)
         const volledige_einde = new Date(day)
+
+        if (parseInt(start_uur) >= parseInt(eind_uur)) {
+            alert("je kan geen startuur na uw einduur hebben")
+            return // stop de rest van de functie
+        }
         if (is_flex) {
             volledige_start.setHours(6, 0, 0, 0)
             volledige_einde.setHours(21, 0, 0, 0)
@@ -141,6 +156,7 @@ const kiesTijd = (day) => {
             start: volledige_start,
             eind: volledige_einde
         }
+        //zorgen daje nie later start dan stopt
         const alBestaand = geselcteerde_dagen.some(d =>
             d.start.toDateString() === volledige_start.toDateString()
         )
@@ -155,6 +171,7 @@ const kiesTijd = (day) => {
 
         closeBtn.onclick = () => {
             tijd_container.innerHTML = ""
+            post_datums()
         }
 
     }
@@ -169,23 +186,73 @@ const post_datums = () => {
     const title = document.createElement("h3")
     title.textContent = "Verstuur beschikbaarheid"
 
+    // error div
+    const errorMsg = document.createElement("p")
+    errorMsg.style.color = "red"
+    errorMsg.style.fontSize = "0.85rem"
+    errorMsg.style.marginTop = "8px"
+    errorMsg.style.display = "none"
+
+    // geselecteerde dagen tonen
+    const dagenLijst = document.createElement("div")
+    dagenLijst.style.marginTop = "12px"
+    dagenLijst.style.display = "flex"
+    dagenLijst.style.flexDirection = "column"
+    dagenLijst.style.gap = "6px"
+
+    if (geselcteerde_dagen.length === 0) {
+        const leeg = document.createElement("p")
+        leeg.textContent = "Nog geen dagen geselecteerd"
+        leeg.style.color = "#888"
+        leeg.style.fontSize = "0.85rem"
+        dagenLijst.appendChild(leeg)
+    } else {
+        geselcteerde_dagen.forEach(dag => {
+            const item = document.createElement("div")
+            item.style.background = "#f4f4f4"
+            item.style.borderRadius = "8px"
+            item.style.padding = "8px 12px"
+            item.style.fontSize = "0.85rem"
+
+            const start = new Date(dag.start)
+            const eind = new Date(dag.eind)
+            const datumStr = start.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "short" })
+            const flex = start.getHours() === 6 && eind.getHours() === 21
+
+            item.textContent = `${datumStr} — ${flex ? "Flexibel" : `${start.getHours()}:00 - ${eind.getHours()}:00`}`
+            dagenLijst.appendChild(item)
+        })
+    }
+
     const verstuur_button = document.createElement("button")
     verstuur_button.className = "primary-btn"
-    verstuur_button.textContent = "verstuur beschikbaarheid"
+    verstuur_button.textContent = "Verstuur beschikbaarheid"
     verstuur_button.addEventListener("click", () => {
+        // validatie: geen dagen geselecteerd
+        if (geselcteerde_dagen.length === 0) {
+            errorMsg.textContent = "Selecteer minstens één dag voor je verstuurt."
+            errorMsg.style.display = "block"
+            return
+        }
+
+        errorMsg.style.display = "none"
+
         fetch('/beschikbaarheid_opslaan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                gekozen_shifts: geselcteerde_dagen
-            })
+            body: JSON.stringify({ gekozen_shifts: geselcteerde_dagen })
         })
-            .then(() => {
-                alert("shifts geposts")
-            }) //naar een post me de dagen erin
+            .then(res => {
+                if (!res.ok) throw new Error("Serverfout")
+                alert("Shifts verstuurd!")
+            })
+            .catch(() => {
+                errorMsg.textContent = "Er ging iets mis, probeer opnieuw."
+                errorMsg.style.display = "block"
+            })
     })
 
-    card.append(title, verstuur_button)
+    card.append(title, dagenLijst, verstuur_button, errorMsg)
     tijd_container.append(card)
 }
 
@@ -285,9 +352,9 @@ const fill_Beschikbaarheid = () => {
 
         grid.appendChild(cell)
     })
-
     card.append(header, weekRow, grid)
     inhoud_container.appendChild(card)
+    post_datums()
 }
 
 const fill_Berichten = () => {
