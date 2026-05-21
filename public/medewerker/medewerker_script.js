@@ -7,6 +7,8 @@ const tijd_container = document.querySelector(".tijd_container")
 const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"]
 const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"]
 let geselcteerde_dagen = []
+let originele_info = []
+let aangepaste_info = []
 
 const datum = new Date()
 let thisYear = datum.getFullYear()
@@ -255,7 +257,6 @@ const post_datums = () => {
     card.append(title, dagenLijst, verstuur_button, errorMsg)
     tijd_container.append(card)
 }
-
 const fill_Beschikbaarheid = () => {
     inhoud_container.innerHTML = ""
     tijd_container.innerHTML = ""
@@ -356,8 +357,17 @@ const fill_Beschikbaarheid = () => {
     inhoud_container.appendChild(card)
     post_datums()
 }
-
-const fill_Berichten = () => {
+const fetch_berichten = () => {
+    fetch('/berichten', {
+        headers: {
+            'Authorization': localStorage.getItem('token')
+        }
+    })
+        .then(res => res.json())
+        .then(data => fill_Berichten(data))
+}
+const fill_Berichten = (data) => {
+    console.log(data)
     inhoud_container.innerHTML = ""
     tijd_container.innerHTML = ""
 
@@ -370,15 +380,58 @@ const fill_Berichten = () => {
     card.appendChild(p)
     inhoud_container.appendChild(card)
 }
+const fetch_profiel_info = () => {
+    fetch('/profiel', {
+        headers: {
+            'Authorization': localStorage.getItem('token')
+        }
+    })
+        .then(res => res.json())
+        .then(data => fill_Profiel(data))
+}
+const maak_veld = (label, placeholder, value) => {
+    const wrapper = document.createElement("div")
+    wrapper.style.marginTop = "10px"
 
-const fill_Profiel = () => {
+    const titel = document.createElement("label")
+    titel.textContent = label
+    titel.style.fontSize = "0.85rem"
+    titel.style.color = "#666"
+
+    const input = document.createElement("input")
+    input.placeholder = placeholder
+    input.value = value
+    input.style.display = "block"
+    input.style.width = "100%"
+    input.style.marginTop = "4px"
+    input.style.padding = "12px"
+    input.style.borderRadius = "10px"
+    input.style.border = "1px solid #ddd"
+
+    wrapper.append(titel, input)
+    return { wrapper, input }
+}
+const fill_Profiel = (data) => {
     inhoud_container.innerHTML = ""
     tijd_container.innerHTML = ""
+    originele_info = []
+    aangepaste_info = []
+
+    console.log(data)
+    let user_naam = ""
+    let user_email = ""
+    let user_telefoon = ""
+
+    data.forEach(user => {
+        user_naam = `${user.first_name} ${user.last_name}`
+        user_email = user.email
+        user_telefoon = user.telefoonnummer
+    });
+    originele_info = [user_naam, user_email, user_telefoon]
 
     const card = document.createElement("div")
     card.className = "card"
 
-    //EADER
     const header = document.createElement("div")
     header.style.textAlign = "center"
 
@@ -391,29 +444,10 @@ const fill_Profiel = () => {
 
     header.append(avatar, naamTitel)
 
-    //INPUTS
-    const naam = document.createElement("input")
-    naam.placeholder = "Naam"
+    const { wrapper: naamWrapper, input: naam } = maak_veld("Naam", "Naam", user_naam)
+    const { wrapper: emailWrapper, input: email } = maak_veld("Email", "Email", user_email)
+    const { wrapper: telWrapper, input: tel } = maak_veld("Telefoon", "Telefoon", user_telefoon)
 
-    const email = document.createElement("input")
-    email.placeholder = "Email"
-
-    const tel = document.createElement("input")
-    tel.placeholder = "Telefoon"
-
-    const locatie = document.createElement("input")
-    locatie.placeholder = "Locatie"
-
-        ;[naam, email, tel, locatie].forEach(inp => {
-            inp.style.display = "block"
-            inp.style.width = "100%"
-            inp.style.marginTop = "10px"
-            inp.style.padding = "12px"
-            inp.style.borderRadius = "10px"
-            inp.style.border = "1px solid #ddd"
-        })
-
-    //BUTTONS
     const save = document.createElement("button")
     save.textContent = "Opslaan"
 
@@ -424,26 +458,45 @@ const fill_Profiel = () => {
     save.style.marginTop = "16px"
     logout.style.marginTop = "8px"
 
-    logout.onclick = () => {
+    logout.addEventListener("click", () => {
         localStorage.removeItem("token")
         window.location.href = "/inlog.html"
-    }
+    })
+    save.addEventListener("click", () => {
+        if (naam.value !== user_naam) aangepaste_info.push({ veld: "naam", waarde: naam.value })
+        if (email.value !== user_email) aangepaste_info.push({ veld: "email", waarde: email.value })
+        if (tel.value !== user_telefoon) aangepaste_info.push({ veld: "telefoon", waarde: tel.value })
 
-    card.append(header, naam, email, tel, locatie, save, logout)
+        if (aangepaste_info.length === 0) {
+            alert("geen nieuwe data")
+            return
+        }
+
+        fetch('/profiel_wijziging_opslaan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                aangepaste_info: aangepaste_info
+            })
+        })
+            .then(() => {
+                alert("wijziging opgeslaan")
+            }) //naar een post me de dagen erin
+    })
+
+    card.append(header, naamWrapper, emailWrapper, telWrapper, save, logout)
     inhoud_container.appendChild(card)
 }
-
-
 const fill_inhoud_container = (keuze) => {
     switch (keuze) {
         case "Beschikbaarheid":
             fill_Beschikbaarheid()
             break
         case "Berichten":
-            fill_Berichten()
+            fetch_berichten()
             break
         case "Profiel":
-            fill_Profiel()
+            fetch_profiel_info()
             break
     }
 }
