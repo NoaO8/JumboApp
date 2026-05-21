@@ -13,6 +13,22 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 
 // ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(msg, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('toast-visible'));
+  setTimeout(() => {
+    toast.classList.remove('toast-visible');
+    setTimeout(() => toast.remove(), 300);
+  }, 2800);
+}
+
+
+// ============================================================
 // PLANNING
 // ============================================================
 function renderPlanning() {
@@ -40,23 +56,50 @@ function renderPlanning() {
 // ============================================================
 function renderRequests() {
   const list = document.getElementById('requestList');
-  list.innerHTML = DATA.requests.map((req, i) => {
+
+  if (DATA.requests.length === 0) {
+    list.innerHTML = `<p class="leeg-tekst" style="padding:20px 0;">Geen openstaande aanvragen.</p>`;
+    updateBadge();
+    return;
+  }
+
+  list.innerHTML = DATA.requests.map(req => {
     const student = getStudent(req.studentId);
     return `
-      <div class="shift" id="req-${i}">
+      <div class="shift" id="req-${req.id}">
+        <div class="avatar">${getInitials(student.name)}</div>
         <div class="info">
           <strong>${student.name}</strong>
           <small>${req.date} • ${req.time}</small>
         </div>
-        <button class="action reject" onclick="removeRequest(${i})">❌ Afwijzen</button>
-        <button class="action accept" onclick="removeRequest(${i})">✅ Accepteren</button>
+        <button class="action reject" onclick="handleRequest(${req.id}, false)">❌ Afwijzen</button>
+        <button class="action accept" onclick="handleRequest(${req.id}, true)">✅ Accepteren</button>
       </div>`;
   }).join('');
+
+  updateBadge();
 }
 
-function removeRequest(index) {
-  const el = document.getElementById(`req-${index}`);
-  if (el) el.remove();
+function handleRequest(id, accepted) {
+  const req = DATA.requests.find(r => r.id === id);
+  if (!req) return;
+  const student = getStudent(req.studentId);
+  DATA.requests = DATA.requests.filter(r => r.id !== id);
+  renderRequests();
+  showToast(
+    accepted
+      ? `✅ Shift van ${student.name} geaccepteerd`
+      : `❌ Aanvraag van ${student.name} afgewezen`,
+    accepted ? 'success' : 'error'
+  );
+}
+
+function updateBadge() {
+  const badge = document.querySelector('[data-tab="aanvragen"] .badge');
+  if (!badge) return;
+  const count = DATA.requests.length;
+  badge.textContent = count;
+  badge.style.display = count === 0 ? 'none' : '';
 }
 
 
@@ -68,6 +111,9 @@ const chatMessages  = document.getElementById('chatMessages');
 const messageInput  = document.getElementById('messageInput');
 const sendBtn       = document.getElementById('sendMessage');
 let currentStudent  = null;
+
+// Sla berichten per student op (in-memory, later DB)
+const chatHistory = {};
 
 function populateStudentSelect() {
   DATA.students.forEach(s => {
@@ -82,15 +128,33 @@ studentSelect.addEventListener('change', () => {
   const student = getStudent(Number(studentSelect.value));
   if (!student) return;
   currentStudent = student;
-  chatMessages.innerHTML = `<div class="message student">Hey, dit is ${student.name} 👋</div>`;
+
+  if (!chatHistory[student.id]) {
+    chatHistory[student.id] = [
+      { from: 'student', text: `Hey, dit is ${student.name} 👋` }
+    ];
+  }
+
+  renderChat();
 });
+
+function renderChat() {
+  if (!currentStudent) return;
+  const msgs = chatHistory[currentStudent.id] || [];
+  chatMessages.innerHTML = msgs.map(m =>
+    `<div class="message ${m.from}">${m.text}</div>`
+  ).join('');
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
 function sendMessage() {
   const text = messageInput.value.trim();
   if (!text || !currentStudent) return;
-  chatMessages.innerHTML += `<div class="message manager">${text}</div>`;
+
+  if (!chatHistory[currentStudent.id]) chatHistory[currentStudent.id] = [];
+  chatHistory[currentStudent.id].push({ from: 'manager', text });
   messageInput.value = '';
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  renderChat();
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -109,7 +173,6 @@ let plannerShiften = [
   { id: 5, studentId: 5, datum: '2026-05-12', start: '11:00', einde: '19:00', rol: 'Bakkerij' },
 ];
 
-// Beschikbaarheid per student per dag (later uit db)
 const beschikbaarheidData = {
   1: { '2026-05-08': '08:00–16:00', '2026-05-09': '10:00–18:00', '2026-05-12': '08:00–16:00' },
   2: { '2026-05-08': '12:00–20:00', '2026-05-09': '08:00–16:00', '2026-05-13': '09:00–17:00' },
@@ -124,6 +187,10 @@ plannerMaand.setDate(1);
 let geselecteerdeDag = null;
 let volgendShiftId = 10;
 let modalDatum = '';
+
+// Filter/zoek state
+let zoekterm = '';
+let rolFilter = 'Alle';
 
 function datumStr(d) {
   const y = d.getFullYear();
@@ -152,6 +219,8 @@ function renderPlannerKalender() {
   const offset   = firstDay === 0 ? 6 : firstDay - 1;
   for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
 
+  const vandaagStr = datumStr(new Date());
+
   getDaysInMonth(month, year).forEach(dag => {
     const ds = datumStr(dag);
     const shiftenOpDag = plannerShiften.filter(s => s.datum === ds);
@@ -159,9 +228,9 @@ function renderPlannerKalender() {
 
     const cell = document.createElement('div');
     cell.className = 'day-cell';
+    if (ds === vandaagStr) cell.classList.add('vandaag');
     if (geselecteerdeDag && datumStr(geselecteerdeDag) === ds) cell.classList.add('active');
 
-    // Stipjes: geel = shift ingepland, groen = beschikbaar
     const stipjes = shiftenOpDag.length > 0 || beschikbaarAantal > 0
       ? `<div class="dag-stipjes">
           ${shiftenOpDag.length > 0 ? `<span class="stip stip-shift" title="${shiftenOpDag.length} shift(en)"></span>` : ''}
@@ -170,7 +239,6 @@ function renderPlannerKalender() {
       : '';
 
     cell.innerHTML = `<div class="day-number">${dag.getDate()}</div>${stipjes}`;
-
     cell.addEventListener('click', () => {
       geselecteerdeDag = dag;
       document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('active'));
@@ -185,7 +253,20 @@ function renderPlannerKalender() {
 function renderDagDetail(ds) {
   const detail = document.getElementById('planner-detail-inhoud');
   const dag    = new Date(ds + 'T12:00:00');
-  const shiftenOpDag = plannerShiften.filter(s => s.datum === ds);
+  let shiftenOpDag = plannerShiften.filter(s => s.datum === ds);
+
+  // Filter op rol
+  const gefilterd = rolFilter !== 'Alle'
+    ? shiftenOpDag.filter(s => s.rol === rolFilter)
+    : shiftenOpDag;
+
+  // Zoek op naam
+  const gezochtStudenten = zoekterm
+    ? DATA.students.filter(s => s.name.toLowerCase().includes(zoekterm.toLowerCase())).map(s => s.id)
+    : null;
+
+  const rollen = ['Alle', 'Kassa', 'Vakkenvuller', 'Vers', 'AGF', 'Bakkerij', 'Schoonmaak'];
+  const maandag = getMaandagVanWeek(new Date(ds + 'T12:00:00'));
 
   detail.innerHTML = `
     <div class="detail-header">
@@ -193,11 +274,25 @@ function renderDagDetail(ds) {
       <button class="primary-btn" style="width:auto;padding:8px 16px;margin-top:0;" onclick="openShiftModal('${ds}')">+ Shift</button>
     </div>
 
-    <h4 class="detail-sectie-titel">📋 Shiften (${shiftenOpDag.length})</h4>
-    ${shiftenOpDag.length === 0
-      ? `<p class="leeg-tekst">Nog geen shiften.</p>`
-      : shiftenOpDag.map(shift => {
+    <!-- Zoek + filter -->
+    <div class="filter-bar">
+      <input type="text" class="filter-input" placeholder="🔍 Zoek student…" value="${zoekterm}"
+        oninput="zoekterm = this.value; renderDagDetail('${ds}')">
+      <div class="rol-filters">
+        ${rollen.map(r => `
+          <button class="rol-btn ${rolFilter === r ? 'active' : ''}"
+            onclick="rolFilter='${r}'; renderDagDetail('${ds}')">${r}</button>
+        `).join('')}
+      </div>
+    </div>
+
+    <h4 class="detail-sectie-titel">📋 Shiften (${gefilterd.length}${gefilterd.length !== shiftenOpDag.length ? ' van ' + shiftenOpDag.length : ''})</h4>
+    ${gefilterd.length === 0
+      ? `<p class="leeg-tekst">Geen shiften${rolFilter !== 'Alle' ? ' voor ' + rolFilter : ''}.</p>`
+      : gefilterd.map(shift => {
           const student = getStudent(shift.studentId);
+          const weekUren = getWeekUren(shift.studentId, maandag);
+          const uren = ((parseInt(shift.einde) - parseInt(shift.start)));
           return `
             <div class="shift-card">
               <div class="shift-card-top">
@@ -206,6 +301,7 @@ function renderDagDetail(ds) {
                   <strong>${student.name}</strong>
                   <span class="role">${shift.rol}</span>
                 </div>
+                <span class="week-uren-badge" title="Uren deze week">${weekUren}u/week</span>
                 <button class="delete-btn" onclick="verwijderShift(${shift.id})">✕</button>
               </div>
               <div class="shift-tijd">🕐 ${shift.start} – ${shift.einde}</div>
@@ -214,22 +310,26 @@ function renderDagDetail(ds) {
     }
 
     <h4 class="detail-sectie-titel" style="margin-top:18px;">👥 Beschikbaarheid</h4>
-    ${DATA.students.map(student => {
-      const besch     = beschikbaarheidData[student.id]?.[ds];
-      const ingepland = shiftenOpDag.some(s => s.studentId === student.id);
-      return `
-        <div class="beschikbaar-rij ${ingepland ? 'ingepland' : ''} ${!besch ? 'niet-beschikbaar' : ''}">
-          <div class="avatar small">${getInitials(student.name)}</div>
-          <div class="info">
-            <strong>${student.name}</strong>
-            <small>${besch ? '🟢 ' + besch : '🔴 Niet beschikbaar'}</small>
-          </div>
-          ${besch && !ingepland
-            ? `<button class="action accept" onclick="openShiftModal('${ds}', ${student.id})">+ Plan in</button>`
-            : ingepland ? `<span class="ingepland-badge">✓ Ingepland</span>` : ''
-          }
-        </div>`;
-    }).join('')}
+    ${DATA.students
+      .filter(s => gezochtStudenten ? gezochtStudenten.includes(s.id) : true)
+      .map(student => {
+        const besch     = beschikbaarheidData[student.id]?.[ds];
+        const ingepland = shiftenOpDag.some(s => s.studentId === student.id);
+        const weekUren  = getWeekUren(student.id, maandag);
+        return `
+          <div class="beschikbaar-rij ${ingepland ? 'ingepland' : ''} ${!besch ? 'niet-beschikbaar' : ''}">
+            <div class="avatar small">${getInitials(student.name)}</div>
+            <div class="info">
+              <strong>${student.name}</strong>
+              <small>${besch ? '🟢 ' + besch : '🔴 Niet beschikbaar'}</small>
+            </div>
+            <span class="week-uren-badge" title="Uren deze week">${weekUren}u</span>
+            ${besch && !ingepland
+              ? `<button class="action accept" onclick="openShiftModal('${ds}', ${student.id})">+ Plan in</button>`
+              : ingepland ? `<span class="ingepland-badge">✓ Ingepland</span>` : ''
+            }
+          </div>`;
+      }).join('')}
   `;
 }
 
@@ -237,7 +337,6 @@ function plannerMaandVorige() {
   plannerMaand.setMonth(plannerMaand.getMonth() - 1);
   renderPlannerKalender();
 }
-
 function plannerMaandVolgende() {
   plannerMaand.setMonth(plannerMaand.getMonth() + 1);
   renderPlannerKalender();
@@ -289,18 +388,38 @@ function slaShiftOp() {
   const rol       = document.getElementById('modal-rol').value;
   const start     = document.getElementById('modal-start').value;
   const einde     = document.getElementById('modal-einde').value;
+
+  // Validatie: einde moet na start
+  if (einde <= start) {
+    showToast('⚠️ Eindtijd moet na begintijd zijn', 'error');
+    return;
+  }
+
+  // Check: student al ingepland op deze dag?
+  const alIngepland = plannerShiften.some(s => s.studentId === studentId && s.datum === modalDatum);
+  if (alIngepland) {
+    showToast('⚠️ Student al ingepland op deze dag', 'error');
+    return;
+  }
+
+  const student = getStudent(studentId);
   plannerShiften.push({ id: volgendShiftId++, studentId, datum: modalDatum, start, einde, rol });
   sluitModal();
   renderPlannerKalender();
   renderDagDetail(modalDatum);
+  showToast(`✅ Shift voor ${student.name} opgeslagen`);
 }
 
 function verwijderShift(id) {
-  if (!confirm('Shift verwijderen?')) return;
+  const shift = plannerShiften.find(s => s.id === id);
+  if (!shift) return;
+  const student = getStudent(shift.studentId);
+  if (!confirm(`Shift van ${student.name} verwijderen?`)) return;
   plannerShiften = plannerShiften.filter(s => s.id !== id);
   const ds = geselecteerdeDag ? datumStr(geselecteerdeDag) : null;
   renderPlannerKalender();
   if (ds) renderDagDetail(ds);
+  showToast(`🗑️ Shift van ${student.name} verwijderd`, 'error');
 }
 
 
