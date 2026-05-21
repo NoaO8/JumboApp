@@ -138,7 +138,10 @@ app.post("/login", (req, res) => {
 })
 app.post("/beschikbaarheid_opslaan", (req, res) => {
     console.log(req.body)
-    login(req.body)
+})
+app.post("/profiel_wijziging_opslaan", (req, res) => {
+    //database vullen me de info
+     
 })
 app.post("/profiel_wijziging_opslaan", (req, res) => {
     //database vullen me de info
