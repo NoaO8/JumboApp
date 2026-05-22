@@ -575,7 +575,6 @@ const fetch_profiel_info = () => {
             fill_Profiel(data)
         })
 }
-
 const maak_veld = (label, placeholder, value) => {
     const wrapper = document.createElement("div")
     wrapper.style.marginTop = "10px"

@@ -13,7 +13,6 @@ const fill_header_container = () => {
     header_container.appendChild(login_header)
     header_container.appendChild(sub)
 }
-
 const fill_inhoud_container = () => {
     //input group wrapper
     const group = document.createElement("div")
@@ -38,7 +37,6 @@ const fill_inhoud_container = () => {
 
     inhoud_container.append(group, login_button)
 }
-
 login_button.addEventListener("click", async () => {
     const geboorteDatum = geboorteDatumInput.value
     errorMsg.classList.remove("visible")
@@ -63,8 +61,8 @@ login_button.addEventListener("click", async () => {
             localStorage.setItem("user_id", data.user_id)
             if (data.role === "medewerker") {
                 window.location.href = "medewerker/medewerker.html"
-            } else {
-                window.location.href = "leidinggevende/beheerder.html"
+            } else if (data.role === "leidinggevende") {
+                window.location.href = "leidinggevende/leidinggevende.html"
             }
         } else {
             errorMsg.textContent = "Ongeldige geboortedatum. Probeer het opnieuw."
