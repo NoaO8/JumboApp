@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jumbo Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1>Jumbo Planner</h1>
+    <p>Leidinggevende Dashboard</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="planning">📅 Aanwezig</button>
+    <button class="tab" data-tab="aanvragen">📝 Shift Aanvragen <span class="badge">3</span></button>
+    <button class="tab" data-tab="planner">🗂️ Planner</button>
+    <button class="tab" data-tab="berichten">💬 Berichten</button>
+  </nav>
+
+  <main class="card">
+
+    <!-- Planning -->
+    <section id="planning" class="tabview active">
+      <div class="card-header">
+        <h2 id="planningDate"></h2>
+        <span>👥 5 studenten ingepland</span>
+      </div>
+      <div id="planningList"></div>
+    </section>
+
+    <!-- Aanvragen -->
+    <section id="aanvragen" class="tabview">
+      <h2>Shift aanvragen</h2>
+      <div id="requestList"></div>
+    </section>
+
+    <!-- Planner -->
+    <section id="planner" class="tabview">
+      <div class="planner-layout">
+
+        <!-- Links: kalender -->
+        <div class="planner-kalender-col">
+          <div class="planner-maand-nav">
+            <button class="nav-btn" onclick="plannerMaandVorige()"><</button>
+            <h2 id="planner-maand-titel"></h2>
+            <button class="nav-btn" onclick="plannerMaandVolgende()">></button>
+          </div>
+          <div class="calendar-grid header">
+            <div>Ma</div><div>Di</div><div>Wo</div>
+            <div>Do</div><div>Vr</div><div>Za</div><div>Zo</div>
+          </div>
+          <div id="planner-kalender-grid" class="calendar-grid"></div>
+        </div>
+
+        <!-- Rechts: dag-detail -->
+        <div class="planner-detail-col">
+          <div id="planner-detail-inhoud">
+            <p class="leeg-tekst" style="margin-top:40px;text-align:center;">
+              &lt; Klik op een dag in de kalender
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div id="shift-modal" class="modal-overlay" style="display:none" onclick="sluitModalBuiten(event)">
+      <div class="modal-card">
+        <h3>Nieuwe shift</h3>
+        <p id="modal-datum-label" class="time-date"></p>
+
+        <label class="modal-label">Student</label>
+        <select id="modal-student" class="modal-input"></select>
+
+        <label class="modal-label">Rol</label>
+        <select id="modal-rol" class="modal-input">
+          <option>Kassa</option>
+          <option>Vakkenvuller</option>
+          <option>Vers</option>
+          <option>AGF</option>
+          <option>Bakkerij</option>
+          <option>Schoonmaak</option>
+        </select>
+
+        <div id="modal-tijd-wrapper" style="display:flex;gap:10px;">
+          <div style="flex:1">
+            <label class="modal-label">Begintijd</label>
+            <select id="modal-start" class="modal-input"></select>
+          </div>
+          <div style="flex:1">
+            <label class="modal-label">Eindtijd</label>
+            <select id="modal-einde" class="modal-input"></select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="primary-btn" style="width:auto;flex:1;" onclick="slaShiftOp()">Opslaan</button>
+          <button class="secondary-btn" style="width:auto;flex:1;" onclick="sluitModal()">Annuleren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Berichten -->
+    <section id="berichten" class="tabview">
+      <div class="chat-container">
+        <div class="chat-header">
+          <select id="studentSelect">
+            <option value="">Selecteer een student om te chatten</option>
+          </select>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-placeholder">
+            Welkom bij Berichten<br>
+            <small>Selecteer een student om een gesprek te starten</small>
+          </div>
+        </div>
+        <div class="chat-input">
+          <input id="messageInput" type="text" placeholder="Typ een bericht…">
+          <button id="sendMessage">></button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
