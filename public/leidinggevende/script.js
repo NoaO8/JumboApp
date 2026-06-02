@@ -147,21 +147,27 @@ let currentStudent  = null;
 const chatHistory   = {};
 
 const infoUsers = () => {
-  fetch('/user_info', {
-      headers: {
-
-      }
-  })
-  .then(res => res.json())
-  .then(data => populateStudentSelect(data))
-}
+  fetch('/user_info')
+    .then(res => {
+      console.log('Status:', res.status);      // is het 200?
+      console.log('OK:', res.ok);
+      return res.json();
+    })
+    .then(data => {
+      console.log('Data:', data);              // wat komt er echt terug?
+      populateStudentSelect(data);
+    })
+    .catch(err => {
+      console.error('Fetch error:', err);      // netwerk of parse fout?
+    });
+};
 
 function populateStudentSelect(data) {
   console.log(data)
-  DATA.students.forEach(s => {
+  data.forEach(s => {
     const option = document.createElement('option');
-    option.value = s.id;
-    option.textContent = s.name;
+    option.value = s.users_id;
+    option.textContent = s.first_name + " " + data.last_name;
     studentSelect.appendChild(option);
   });
 }
