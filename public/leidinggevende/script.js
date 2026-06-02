@@ -45,7 +45,7 @@ function renderPlanning() {
   }).join('');
 }
 
-const fetch_berichten = () => {
+const fetch_availability = () => {
   fetch('/availability', {
       headers: {
           'authorization': localStorage.getItem('token'),
@@ -146,7 +146,18 @@ const sendBtn       = document.getElementById('sendMessage');
 let currentStudent  = null;
 const chatHistory   = {};
 
-function populateStudentSelect() {
+const infoUsers = () => {
+  fetch('/user_info', {
+      headers: {
+
+      }
+  })
+  .then(res => res.json())
+  .then(data => populateStudentSelect(data))
+}
+
+function populateStudentSelect(data) {
+  console.log(data)
   DATA.students.forEach(s => {
     const option = document.createElement('option');
     option.value = s.id;
@@ -164,10 +175,24 @@ studentSelect.addEventListener('change', () => {
       { from: 'student', text: `Hey, dit is ${student.name} 👋` }
     ];
   }
-  renderChat();
+  fetch_berichten();
 });
 
-function renderChat() {
+const fetch_berichten = () => {
+  fetch('/berichten', {
+      headers: {
+          'Authorization': localStorage.getItem('token'),
+          'role':localStorage.getItem('role'),
+          'studentennaam' : studentennaam
+      }
+  })
+      .then(res => res.json())
+      .then(data => renderChat(data))
+}
+
+
+function renderChat(data) {
+  console.log(data)
   if (!currentStudent) return;
   const msgs = chatHistory[currentStudent.id] || [];
   chatMessages.innerHTML = msgs.map(m =>
@@ -522,5 +547,5 @@ function verwijderShift(id) {
 
 
 renderPlanning();
-fetch_berichten();
+fetch_availability();
 populateStudentSelect();
