@@ -64,7 +64,6 @@ const login = (geboorteDatum, res) => {
 const post_in_database = (body) => {
     //posten naar db als noa et afmaakt
 }
-
 app.get('/inlog', (req, res) => {
     const filePath = path.join(__dirname, 'public', "inlog.html");
     res.sendFile(filePath);
@@ -159,7 +158,7 @@ app.get("/shifts", (req, res) => {
 })
 app.get("/availability", (req, res) => {
     res.setHeader("Content-Type", "application/json")
-
+    console.log(req.headers)
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
 
@@ -167,21 +166,38 @@ app.get("/availability", (req, res) => {
         res.statusCode = 401
         return res.end(JSON.stringify({ message: "niet ingelogd" }))
     }
-
-    db.all(
-        `SELECT availability.* FROM availability
-         INNER JOIN user ON user.users_id = availability.user_id
-         WHERE user.birthdate = ?
-         ORDER BY availability.start_dateTime ASC`,
-        [geboorteDatum],
-        (err, rows) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
+    const role = req.headers["role"]
+    if(role === "medewerker"){
+        db.all(
+            `SELECT availability.* FROM availability
+             INNER JOIN user ON user.users_id = availability.user_id
+             WHERE user.birthdate = ?
+             ORDER BY availability.start_dateTime ASC`,
+            [geboorteDatum],
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
             }
-            res.end(JSON.stringify(rows))
-        }
-    )
+        )
+    }else{
+        db.all(
+            `SELECT availability.* FROM availability
+             INNER JOIN user ON user.users_id = availability.user_id
+             ORDER BY availability.start_dateTime ASC`,
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
+            }
+        )
+    }
+
+    
 })
 app.post("/bericht_sturen", (req, res) => {
     const token = req.headers['authorization']

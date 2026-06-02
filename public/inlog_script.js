@@ -59,6 +59,7 @@ login_button.addEventListener("click", async () => {
         if (data.token) {
             localStorage.setItem("token", data.token)
             localStorage.setItem("user_id", data.user_id)
+            localStorage.setItem("role", data.role)
             if (data.role === "medewerker") {
                 window.location.href = "medewerker/medewerker.html"
             } else if (data.role === "leidinggevende") {
