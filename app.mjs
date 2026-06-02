@@ -12,7 +12,10 @@ const tokens = {}
 //express goe zettn
 const app = express();
 const PORT = 3000;
-
+/*SELECT messages.* FROM messages
+         INNER JOIN user ON user.users_id = messages.receiver_id OR user.users_id = messages.sender_id
+         WHERE user.first_name = ? AND user.last_name = ?
+        ORDER BY messages.sent_at ASC*/
 app.use(express.json());
 app.use(express.static("public"));
 //db opzetten
@@ -72,6 +75,19 @@ app.get('/medewerker', (req, res) => {
     const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
     res.sendFile(filePath);
 });
+app.get("user_info", (req,res) => {
+    db.all(
+        `SELECT * FROM user`,
+        (err,rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
 //help vo token
 const get_gebruiker_token = (token) => {
     return Object.keys(tokens).find(key => tokens[key] === token)
