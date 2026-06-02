@@ -45,10 +45,21 @@ function renderPlanning() {
   }).join('');
 }
 
+const fetch_berichten = () => {
+  fetch('/availability', {
+      headers: {
+          'authorization': localStorage.getItem('token'),
+          'role':localStorage.getItem('role')
+      }
+  })
+      .then(res => res.json())
+      .then(data => renderRequests(data))
+    }
 
 // AANVRAGEN
-function renderRequests() {
+function renderRequests(data) {
   const list = document.getElementById('requestList');
+  console.log(data)
 
   if (DATA.requests.length === 0) {
     list.innerHTML = `<p class="leeg-tekst" style="padding:20px 0;">Geen open aanwezigheidsverzoeken.</p>`;
@@ -56,6 +67,7 @@ function renderRequests() {
     return;
   }
 
+  
   list.innerHTML = DATA.requests.map(req => {
     const student = getStudent(req.studentId);
     return `
@@ -105,7 +117,7 @@ function handleRequest(id, accepted) {
     DATA.requests = DATA.requests.filter(r => r.id !== id);
   }
 
-  renderRequests();
+  //renderRequests();
   renderPlannerKalender();
 
   showToast(
@@ -510,5 +522,5 @@ function verwijderShift(id) {
 
 
 renderPlanning();
-renderRequests();
+fetch_berichten();
 populateStudentSelect();
