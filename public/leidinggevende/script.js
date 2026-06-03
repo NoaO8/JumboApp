@@ -45,10 +45,21 @@ function renderPlanning() {
   }).join('');
 }
 
+const fetch_availability = () => {
+  fetch('/availability', {
+      headers: {
+          'authorization': localStorage.getItem('token'),
+          'role':localStorage.getItem('role')
+      }
+  })
+      .then(res => res.json())
+      .then(data => renderRequests(data))
+    }
 
 // AANVRAGEN
-function renderRequests() {
+function renderRequests(data) {
   const list = document.getElementById('requestList');
+  console.log(data)
 
   if (DATA.requests.length === 0) {
     list.innerHTML = `<p class="leeg-tekst" style="padding:20px 0;">Geen open aanwezigheidsverzoeken.</p>`;
@@ -56,6 +67,7 @@ function renderRequests() {
     return;
   }
 
+  
   list.innerHTML = DATA.requests.map(req => {
     const student = getStudent(req.studentId);
     return `
@@ -105,7 +117,7 @@ function handleRequest(id, accepted) {
     DATA.requests = DATA.requests.filter(r => r.id !== id);
   }
 
-  renderRequests();
+  //renderRequests();
   renderPlannerKalender();
 
   showToast(
@@ -134,11 +146,28 @@ const sendBtn       = document.getElementById('sendMessage');
 let currentStudent  = null;
 const chatHistory   = {};
 
-function populateStudentSelect() {
-  DATA.students.forEach(s => {
+const infoUsers = () => {
+  fetch('/user_info')
+    .then(res => {
+      console.log('Status:', res.status);      // is het 200?
+      console.log('OK:', res.ok);
+      return res.json();
+    })
+    .then(data => {
+      console.log('Data:', data);              // wat komt er echt terug?
+      populateStudentSelect(data);
+    })
+    .catch(err => {
+      console.error('Fetch error:', err);      // netwerk of parse fout?
+    });
+};
+
+function populateStudentSelect(data) {
+  console.log(data)
+  data.forEach(s => {
     const option = document.createElement('option');
-    option.value = s.id;
-    option.textContent = s.name;
+    option.value = s.users_id;
+    option.textContent = s.first_name + " " + data.last_name;
     studentSelect.appendChild(option);
   });
 }
@@ -152,10 +181,24 @@ studentSelect.addEventListener('change', () => {
       { from: 'student', text: `Hey, dit is ${student.name} 👋` }
     ];
   }
-  renderChat();
+  fetch_berichten();
 });
 
-function renderChat() {
+const fetch_berichten = () => {
+  fetch('/berichten', {
+      headers: {
+          'Authorization': localStorage.getItem('token'),
+          'role':localStorage.getItem('role'),
+          'studentennaam' : studentennaam
+      }
+  })
+      .then(res => res.json())
+      .then(data => renderChat(data))
+}
+
+
+function renderChat(data) {
+  console.log(data)
   if (!currentStudent) return;
   const msgs = chatHistory[currentStudent.id] || [];
   chatMessages.innerHTML = msgs.map(m =>
@@ -510,5 +553,5 @@ function verwijderShift(id) {
 
 
 renderPlanning();
-renderRequests();
+fetch_availability();
 populateStudentSelect();

@@ -12,7 +12,10 @@ const tokens = {}
 //express goe zettn
 const app = express();
 const PORT = 3000;
-
+/*SELECT messages.* FROM messages
+         INNER JOIN user ON user.users_id = messages.receiver_id OR user.users_id = messages.sender_id
+         WHERE user.first_name = ? AND user.last_name = ?
+        ORDER BY messages.sent_at ASC*/
 app.use(express.json());
 app.use(express.static("public"));
 //db opzetten
@@ -71,6 +74,19 @@ app.get('/medewerker', (req, res) => {
     const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
     res.sendFile(filePath);
 });
+app.get("user_info", (req,res) => {
+    db.all(
+        `SELECT * FROM user`,
+        (err,rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify(rows))
+        }
+    )
+})
 //help vo token
 const get_gebruiker_token = (token) => {
     return Object.keys(tokens).find(key => tokens[key] === token)
@@ -157,7 +173,7 @@ app.get("/shifts", (req, res) => {
 })
 app.get("/availability", (req, res) => {
     res.setHeader("Content-Type", "application/json")
-
+    console.log(req.headers)
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
 
@@ -165,21 +181,38 @@ app.get("/availability", (req, res) => {
         res.statusCode = 401
         return res.end(JSON.stringify({ message: "niet ingelogd" }))
     }
-
-    db.all(
-        `SELECT availability.* FROM availability
-         INNER JOIN user ON user.users_id = availability.user_id
-         WHERE user.birthdate = ?
-         ORDER BY availability.start_dateTime ASC`,
-        [geboorteDatum],
-        (err, rows) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
+    const role = req.headers["role"]
+    if(role === "medewerker"){
+        db.all(
+            `SELECT availability.* FROM availability
+             INNER JOIN user ON user.users_id = availability.user_id
+             WHERE user.birthdate = ?
+             ORDER BY availability.start_dateTime ASC`,
+            [geboorteDatum],
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
             }
-            res.end(JSON.stringify(rows))
-        }
-    )
+        )
+    }else{
+        db.all(
+            `SELECT availability.* FROM availability
+             INNER JOIN user ON user.users_id = availability.user_id
+             ORDER BY availability.start_dateTime ASC`,
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
+            }
+        )
+    }
+
+    
 })
 app.post("/bericht_sturen", (req, res) => {
     const token = req.headers['authorization']
