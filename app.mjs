@@ -54,17 +54,15 @@ const login = (geboorteDatum, res) => {
                 res.statusCode = 200
                 res.setHeader("Content-Type", "application/json")
                 return res.end(JSON.stringify({ token, role, user_id: user.users_id }))
-            } else {
-                res.statusCode = 401
-                return res.end(JSON.stringify({ message: "ongeldige geboortedatum" }))
             }
+            res.statusCode = 401
+            return res.end(JSON.stringify({ message: "ongeldige geboortedatum" }))
         })
 
 }
 const post_in_database = (body) => {
     //posten naar db als noa et afmaakt
 }
-
 app.get('/inlog', (req, res) => {
     const filePath = path.join(__dirname, 'public', "inlog.html");
     res.sendFile(filePath);
@@ -296,6 +294,9 @@ app.post("/profiel_wijziging_opslaan", (req, res) => {
 
     res.setHeader("Content-Type", "application/json")
     res.end(JSON.stringify({ message: "profiel bijgewerkt" }))
+})
+app.post("/shifts", (req,res) => {
+    //shit van noa posten naar db, de shift da ie doorsturt
 })
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);
