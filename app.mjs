@@ -74,7 +74,7 @@ app.get('/medewerker', (req, res) => {
     const filePath = path.join(__dirname, 'public', 'medewerker', "medewerker.html");
     res.sendFile(filePath);
 });
-app.get("user_info", (req,res) => {
+app.get("/user_info", (req,res) => {
     db.all(
         `SELECT * FROM user`,
         (err,rows) => {
@@ -328,8 +328,141 @@ app.post("/profiel_wijziging_opslaan", (req, res) => {
     res.setHeader("Content-Type", "application/json")
     res.end(JSON.stringify({ message: "profiel bijgewerkt" }))
 })
-app.post("/shifts", (req,res) => {
-    //shit van noa posten naar db, de shift da ie doorsturt
+// Shift accepteren (availability → planner)
+app.post("/shifts", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    const { user_id, start, einde, rol } = req.body
+
+    if (!user_id || !start || !einde) {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "ongeldige data" }))
+    }
+
+    db.run(
+        `INSERT INTO planner (user_id, start_dateTime, end_dateTime, rol) VALUES (?, ?, ?, ?)`,
+        [user_id, start, einde, rol ?? 'Kassa'],
+        function (err) {
+            if (err) {
+                console.error(err)
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ planner_id: this.lastID }))
+        }
+    )
+})
+
+// Availability verwijderen (afwijzen of na accepteren)
+app.delete("/availability/:id", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.run(
+        `DELETE FROM availability WHERE availability_id = ?`,
+        [req.params.id],
+        function (err) {
+            if (err) {
+                console.error(err)
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ message: "verwijderd" }))
+        }
+    )
+})
+
+// Nieuw lid toevoegen
+app.post("/users", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    const { first_name, last_name, email, telefoonnummer, birthdate } = req.body
+
+    if (!first_name || !last_name || !birthdate) {
+        res.statusCode = 400
+        return res.end(JSON.stringify({ message: "voornaam, achternaam en geboortedatum zijn verplicht" }))
+    }
+
+    db.run(
+        `INSERT INTO user (first_name, last_name, email, telefoonnummer, birthdate) VALUES (?, ?, ?, ?, ?)`,
+        [first_name, last_name, email ?? null, telefoonnummer ?? null, birthdate],
+        function (err) {
+            if (err) {
+                console.error(err)
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ users_id: this.lastID }))
+        }
+    )
+})
+
+// Lid verwijderen
+app.delete("/users/:id", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.run(
+        `DELETE FROM user WHERE users_id = ?`,
+        [req.params.id],
+        function (err) {
+            if (err) {
+                console.error(err)
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify({ message: "lid verwijderd" }))
+        }
+    )
+})
+
+// Alle leden ophalen
+app.get("/users", (req, res) => {
+    const token = req.headers['authorization']
+    const geboorteDatum = get_gebruiker_token(token)
+
+    if (!geboorteDatum) {
+        res.statusCode = 401
+        return res.end(JSON.stringify({ message: "niet ingelogd" }))
+    }
+
+    db.all(
+        `SELECT users_id, first_name, last_name, email, telefoonnummer, birthdate FROM user`,
+        (err, rows) => {
+            if (err) {
+                res.statusCode = 500
+                return res.end(JSON.stringify({ message: "database fout" }))
+            }
+            res.setHeader("Content-Type", "application/json")
+            res.end(JSON.stringify(rows))
+        }
+    )
 })
 app.listen(PORT, () => {
     console.log(`Server op http://localhost:${PORT}`);
