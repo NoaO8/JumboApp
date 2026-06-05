@@ -338,7 +338,7 @@ app.post("/shifts", (req, res) => {
         return res.end(JSON.stringify({ message: "niet ingelogd" }))
     }
 
-    const { user_id, start, einde, rol } = req.body
+    const {start, einde, rol } = req.body
 
     if (!user_id || !start || !einde) {
         res.statusCode = 400
@@ -346,8 +346,8 @@ app.post("/shifts", (req, res) => {
     }
 
     db.run(
-        `INSERT INTO planner (user_id, start_dateTime, end_dateTime, rol) VALUES (?, ?, ?, ?)`,
-        [user_id, start, einde, rol ?? 'Kassa'],
+        `INSERT INTO planner (start_dateTime, end_dateTime, description) VALUES (?, ?, ?)`,
+        [start, einde, rol],
         function (err) {
             if (err) {
                 console.error(err)
@@ -359,32 +359,6 @@ app.post("/shifts", (req, res) => {
         }
     )
 })
-
-// Availability verwijderen (afwijzen of na accepteren)
-app.delete("/availability/:id", (req, res) => {
-    const token = req.headers['authorization']
-    const geboorteDatum = get_gebruiker_token(token)
-
-    if (!geboorteDatum) {
-        res.statusCode = 401
-        return res.end(JSON.stringify({ message: "niet ingelogd" }))
-    }
-
-    db.run(
-        `DELETE FROM availability WHERE availability_id = ?`,
-        [req.params.id],
-        function (err) {
-            if (err) {
-                console.error(err)
-                res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
-            }
-            res.setHeader("Content-Type", "application/json")
-            res.end(JSON.stringify({ message: "verwijderd" }))
-        }
-    )
-})
-
 // Nieuw lid toevoegen
 app.post("/users", (req, res) => {
     const token = req.headers['authorization']
@@ -416,32 +390,6 @@ app.post("/users", (req, res) => {
         }
     )
 })
-
-// Lid verwijderen
-app.delete("/users/:id", (req, res) => {
-    const token = req.headers['authorization']
-    const geboorteDatum = get_gebruiker_token(token)
-
-    if (!geboorteDatum) {
-        res.statusCode = 401
-        return res.end(JSON.stringify({ message: "niet ingelogd" }))
-    }
-
-    db.run(
-        `DELETE FROM user WHERE users_id = ?`,
-        [req.params.id],
-        function (err) {
-            if (err) {
-                console.error(err)
-                res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
-            }
-            res.setHeader("Content-Type", "application/json")
-            res.end(JSON.stringify({ message: "lid verwijderd" }))
-        }
-    )
-})
-
 // Alle leden ophalen
 app.get("/users", (req, res) => {
     const token = req.headers['authorization']
