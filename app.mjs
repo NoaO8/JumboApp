@@ -340,7 +340,7 @@ app.post("/shifts", (req, res) => {
 
     const {start, einde, rol } = req.body
 
-    if (!user_id || !start || !einde) {
+    if (!start || !einde) {
         res.statusCode = 400
         return res.end(JSON.stringify({ message: "ongeldige data" }))
     }
