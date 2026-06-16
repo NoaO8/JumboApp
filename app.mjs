@@ -359,6 +359,32 @@ app.post("/shifts", (req, res) => {
         }
     )
 })
+// Voeg dit toe in je backend / server bestand
+app.delete('/availability/:id', (req, res) => {
+  const availabilityId = req.params.id;
+
+  // SQLite gebruikt db.run voor DELETE queries
+  // Het vraagteken (?) zorgt ervoor dat het veilig blijft tegen SQL-injection
+  const query = `DELETE FROM availability WHERE availability_id = ?`;
+
+  db.run(query, [availabilityId], function (dbError) {
+    if (dbError) {
+      console.error("❌ SQL FOUT:", dbError.message);
+      return res.status(500).json({ 
+        error: 'Database crash', 
+        message: dbError.message 
+      });
+    }
+
+    // 'this.changes' bevat het aantal verwijderde rijen in sqlite3
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'ID bestaat niet in de database' });
+    }
+
+    // Succes! Stuur een nette status 200 terug
+    return res.status(200).json({ success: true });
+  });
+});
 // Nieuw lid toevoegen
 app.post("/users", (req, res) => {
     const token = req.headers['authorization']

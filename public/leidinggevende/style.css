@@ -382,3 +382,25 @@
    }
    .toast.toast-success { background: #166534; }
    .toast.toast-error   { background: #991b1b; }
+   /* Styling voor de stipjes onder de datum */
+.dag-stipjes {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.stip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.stip-groen {
+  background-color: #2ecc71 !important; /* Groen */
+}
+
+.stip-blauw {
+  background-color: #3498db !important; /* Blauw */
+}
