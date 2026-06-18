@@ -144,6 +144,7 @@ app.get("/profiel", (req, res) => {
         }
     )
 })
+// VERVANG DE BESTAANDE app.get("/shifts") IN JOUW app.mjs DOOR DIT STUKJE:
 app.get("/shifts", (req, res) => {
     res.setHeader("Content-Type", "application/json")
 
@@ -155,21 +156,38 @@ app.get("/shifts", (req, res) => {
         return res.end(JSON.stringify({ message: "niet ingelogd" }))
     }
 
-    db.all(
-        `SELECT planner.* FROM planner
-         INNER JOIN planner_user ON planner.planner_id = planner_user.planner_id
-         INNER JOIN user ON user.users_id = planner_user.user_id
-         WHERE user.birthdate = ?
-         ORDER BY planner.start_dateTime ASC`,
-        [geboorteDatum],
-        (err, rows) => {
-            if (err) {
-                res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
+    const role = req.headers["role"]
+
+    if(role === "medewerker"){
+        db.all(
+            `SELECT planner.*, planner_user.user_id FROM planner
+             INNER JOIN planner_user ON planner.planner_id = planner_user.planner_id
+             INNER JOIN user ON user.users_id = planner_user.user_id
+             WHERE user.birthdate = ?
+             ORDER BY planner.start_dateTime ASC`,
+            [geboorteDatum],
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
             }
-            res.end(JSON.stringify(rows))
-        }
-    )
+        )
+    } else {
+        db.all(
+            `SELECT planner.*, planner_user.user_id FROM planner
+             INNER JOIN planner_user ON planner.planner_id = planner_user.planner_id
+             ORDER BY planner.start_dateTime ASC`,
+            (err, rows) => {
+                if (err) {
+                    res.statusCode = 500
+                    return res.end(JSON.stringify({ message: "database fout" }))
+                }
+                res.end(JSON.stringify(rows))
+            }
+        )
+    }
 })
 app.get("/availability", (req, res) => {
     res.setHeader("Content-Type", "application/json")
@@ -329,6 +347,7 @@ app.post("/profiel_wijziging_opslaan", (req, res) => {
     res.end(JSON.stringify({ message: "profiel bijgewerkt" }))
 })
 // Shift accepteren (availability → planner)
+// Shift accepteren OF handmatig toevoegen (availability → planner + koppeling)
 app.post("/shifts", (req, res) => {
     const token = req.headers['authorization']
     const geboorteDatum = get_gebruiker_token(token)
@@ -338,24 +357,48 @@ app.post("/shifts", (req, res) => {
         return res.end(JSON.stringify({ message: "niet ingelogd" }))
     }
 
-    const {start, einde, rol } = req.body
+    // We vangen nu ook user_id op uit de request body (meegestuurd vanuit de frontend!)
+    const { start, einde, rol, user_id } = req.body
 
-    if (!start || !einde) {
+    // Check of we wel een user_id hebben, anders kunnen we niet koppelen
+    if (!start || !einde || !user_id) {
         res.statusCode = 400
-        return res.end(JSON.stringify({ message: "ongeldige data" }))
+        return res.end(JSON.stringify({ message: "ongeldige data: start, einde en user_id zijn verplicht" }))
     }
 
+    // STAP 1: Sla de shift op in de algemene planner tabel
     db.run(
         `INSERT INTO planner (start_dateTime, end_dateTime, description) VALUES (?, ?, ?)`,
-        [start, einde, rol],
+        [start, einde, rol || 'Kassa'],
         function (err) {
             if (err) {
-                console.error(err)
+                console.error("Fout bij invoegen in planner:", err)
                 res.statusCode = 500
-                return res.end(JSON.stringify({ message: "database fout" }))
+                return res.end(JSON.stringify({ message: "database fout bij aanmaken shift" }))
             }
-            res.setHeader("Content-Type", "application/json")
-            res.end(JSON.stringify({ planner_id: this.lastID }))
+
+            const nieuwPlannerId = this.lastID; // Dit is het ID van de zojuist gemaakte shift
+
+            // STAP 2: Koppel de shift aan de juiste user in planner_user!
+            db.run(
+                `INSERT INTO planner_user (planner_id, user_id) VALUES (?, ?)`,
+                [nieuwPlannerId, user_id],
+                function (koppelErr) {
+                    if (koppelErr) {
+                        console.error("Fout bij koppelen in planner_user:", koppelErr)
+                        res.statusCode = 500
+                        return res.end(JSON.stringify({ message: "shift gemaakt, maar koppelen aan medewerker mislukt" }))
+                    }
+
+                    // Alles is gelukt! Pas nu sturen we succes terug
+                    res.setHeader("Content-Type", "application/json")
+                    res.statusCode = 200
+                    return res.end(JSON.stringify({ 
+                        message: "Shift succesvol opgeslagen en gekoppeld!", 
+                        planner_id: nieuwPlannerId 
+                    }))
+                }
+            )
         }
     )
 })

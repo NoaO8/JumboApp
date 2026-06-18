@@ -73,6 +73,7 @@ function fetch_availability() {
 function renderRequests(data) {
   const list = document.getElementById('requestList');
 
+  if (!list) return;
   if (!data || data.length === 0) {
     list.innerHTML = `<p class="leeg-tekst" style="padding:20px 0;">Geen open aanvragen.</p>`;
     updateBadge(0);
@@ -83,8 +84,9 @@ function renderRequests(data) {
   const formatter = new Intl.DateTimeFormat('nl-NL', tijdOpties);
 
   list.innerHTML = data.map(req => {
-    const startDatumObj = new Date(req.start_dateTime);
-    const eindDatumObj = new Date(req.end_dateTime);
+    // Safari/iOS fix: vervang spaties door 'T' voor een geldige datum parsing
+    const startDatumObj = new Date(req.start_dateTime.replace(' ', 'T'));
+    const eindDatumObj = new Date(req.end_dateTime.replace(' ', 'T'));
 
     const startSchoon = formatter.format(startDatumObj).replace(',', '');
     const eindSchoon = formatter.format(eindDatumObj).replace(',', '');
@@ -92,7 +94,7 @@ function renderRequests(data) {
     const sqlStart = startDatumObj.toISOString().slice(0, 19).replace('T', ' ');
     const sqlEind = eindDatumObj.toISOString().slice(0, 19).replace('T', ' ');
     
-    const weergaveRol = req.rol || 'Geen rol gespecificeerd';
+    const weergaveRol = req.rol || req.role || 'Geen rol gespecificeerd';
     const volledigeNaam = getStudentNaam(req.user_id);
 
     return `
@@ -155,6 +157,8 @@ function handleRequest(availabilityId, accepted) {
       user_id: vanUserId, 
       start: startRaw, 
       einde: eindeRaw,
+      start_dateTime: startRaw,
+      end_dateTime: eindeRaw,
       rol: definitieveRol
     })
   })
@@ -177,56 +181,14 @@ function handleRequest(availabilityId, accepted) {
   .catch(err => showToast(err.message, 'error'));
 }
 
-function updateBadge(count) {
-  const badge = document.querySelector('[data-tab="aanvragen"] .badge');
-  if (!badge) return;
-  badge.textContent = count;
-  badge.style.display = count === 0 ? 'none' : '';
-}
-
-// PLANNER  —  GET /shifts (GEFIXT MET WATERDICHTE DATUM SPLIT)
-function fetch_shifts() {
-  fetch('/shifts', {
-    headers: { 'Authorization': localStorage.getItem('token') }
-  })
-    .then(res => res.json())
-    .then(data => {
-      plannerShiften = data.map(s => {
-        // Splits de T om ALTIJD exact YYYY-MM-DD over te houden, onafhankelijk van tijdzones
-        const puurDatumStr = s.start_dateTime.split('T')[0];
-
-        const startObj = new Date(s.start_dateTime);
-        const eindObj = new Date(s.end_dateTime);
-
-        const startTijd = String(startObj.getHours()).padStart(2, '0') + ':' + String(startObj.getMinutes()).padStart(2, '0');
-        const eindTijd = String(eindObj.getHours()).padStart(2, '0') + ':' + String(eindObj.getMinutes()).padStart(2, '0');
-
-        return {
-          id: s.planner_id,
-          user_id: s.user_id,
-          datum: puurDatumStr,
-          start: startTijd,
-          einde: eindTijd,
-          rol: s.rol || 'Kassa'
-        };
-      });
-      
-      renderPlannerKalender();
-      
-      if (geselecteerdeDagStr) {
-        renderShiftenLijst(geselecteerdeDagStr);
-      }
-    })
-    .catch(() => showToast('Kon shiften niet laden', 'error'));
-}
-
-// KALENDER RENDEREN (INCLUSIEF DIRECTE INLINE BOLLETJES STYLING)
 function renderPlannerKalender() {
   const year = plannerMaand.getFullYear();
   const month = plannerMaand.getMonth();
-  document.getElementById('planner-maand-titel').textContent = MAANDEN[month] + ' ' + year;
+  const titelEl = document.getElementById('planner-maand-titel');
+  if (titelEl) titelEl.textContent = MAANDEN[month] + ' ' + year;
 
   const grid = document.getElementById('planner-kalender-grid');
+  if (!grid) return;
   grid.innerHTML = '';
 
   const offset = new Date(year, month, 1).getDay();
@@ -250,8 +212,7 @@ function renderPlannerKalender() {
 
     let stipHtml = '';
     if (shiftenOpDag.length > 0) {
-      const heeftKassa = shiftenOpDag.some(s => s.role === 'Kassa' || s.rol === 'Kassa');
-      // Bepaal kleur: blauw voor Kassa, groen voor de rest
+      const heeftKassa = shiftenOpDag.some(s => s.rol === 'Kassa');
       const kleur = heeftKassa ? '#3498db' : '#2ecc71';
       
       stipHtml = `
@@ -276,8 +237,55 @@ function renderPlannerKalender() {
   });
 }
 
+function updateBadge(count) {
+  const badge = document.querySelector('[data-tab="aanvragen"] .badge');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.style.display = count === 0 ? 'none' : '';
+}
+
+// PLANNER  —  GET /shifts
+function fetch_shifts() {
+  fetch('/shifts', {
+    headers: { 
+      'Authorization': localStorage.getItem('token'),
+      'role': localStorage.getItem('role')
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      plannerShiften = data.map(s => {
+        if (!s.start_dateTime) return null;
+        
+        const puurDatumStr = s.start_dateTime.substring(0, 10);
+        const startObj = new Date(s.start_dateTime.replace(' ', 'T'));
+        const eindObj = new Date(s.end_dateTime.replace(' ', 'T'));
+
+        const startTijd = String(startObj.getHours()).padStart(2, '0') + ':' + String(startObj.getMinutes()).padStart(2, '0');
+        const eindTijd = String(eindObj.getHours()).padStart(2, '0') + ':' + String(eindObj.getMinutes()).padStart(2, '0');
+
+        return {
+          id: s.planner_id,
+          user_id: s.user_id,
+          datum: puurDatumStr,
+          start: startTijd,
+          einde: eindTijd,
+          rol: s.rol || s.role || s.description || 'Kassa'
+        };
+      }).filter(Boolean);
+      
+      renderPlannerKalender();
+      
+      if (geselecteerdeDagStr) {
+        renderShiftenLijst(geselecteerdeDagStr);
+      }
+    })
+    .catch(() => showToast('Kon shiften niet laden', 'error'));
+}
+
 function renderDagDetail(ds) {
   const detail = document.getElementById('planner-detail-inhoud');
+  if (!detail) return;
   const dag = new Date(ds + 'T12:00:00');
 
   detail.dataset.dag = ds;
@@ -336,7 +344,6 @@ function renderShiftenLijst(ds) {
 function plannerMaandVorige() { plannerMaand.setMonth(plannerMaand.getMonth() - 1); renderPlannerKalender(); }
 function plannerMaandVolgende() { plannerMaand.setMonth(plannerMaand.getMonth() + 1); renderPlannerKalender(); }
 
-// MODAL FUNCTIES
 function vulModalTijden() {
   ['modal-start', 'modal-einde'].forEach(id => {
     const el = document.getElementById(id);
@@ -391,7 +398,14 @@ function slaShiftOp() {
       'Content-Type': 'application/json',
       'Authorization': localStorage.getItem('token')
     },
-    body: JSON.stringify({ user_id: userId, start: startFull, einde: eindFull, rol: rol })
+    body: JSON.stringify({ 
+      user_id: userId, 
+      start: startFull, 
+      einde: eindFull,
+      start_dateTime: startFull,
+      end_dateTime: eindFull,
+      rol: rol 
+    })
   })
   .then(res => {
     if (!res.ok) throw new Error('Kon shift niet opslaan');
@@ -417,7 +431,7 @@ function verwijderShift(shiftId) {
   .catch(err => showToast(err.message, 'error'));
 }
 
-// BERICHTEN  —  GET /berichten
+// BERICHTEN
 const studentSelect = document.getElementById('studentSelect');
 const chatMessages   = document.getElementById('chatMessages');
 const messageInput   = document.getElementById('messageInput');
@@ -493,24 +507,6 @@ if (document.getElementById('sendMessage')) {
   messageInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 }
 
-// LEDEN  —  GET /users
-function fetch_leden() {
-  fetch('/users', {
-    headers: { 'Authorization': localStorage.getItem('token') }
-  })
-    .then(res => res.json())
-    .then(data => {
-      globaleLedenLijst = data; 
-      renderLeden(data);
-      fetch_availability();
-    })
-    .catch(() => {
-      const el = document.getElementById('ledenList');
-      if (el) el.innerHTML = `<p class="leeg-tekst">Kon leden niet laden.</p>`;
-      fetch_availability();
-    });
-}
-
 function renderLeden(data) {
   const list = document.getElementById('ledenList');
   if (!list) return;
@@ -528,7 +524,34 @@ function renderLeden(data) {
     </div>`).join('');
 }
 
-// INIT
-fetch_leden();
-fetch_shifts();
-fetch_users_voor_chat();
+// ==========================================
+// GEZAMENLIJKE INITIALISATIE BIJ APPLICATIE START
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  // Haal eerst alle leden op, zodat getStudentNaam() direct werkt
+  fetch('/users', {
+    headers: { 'Authorization': token }
+  })
+  .then(res => res.json())
+  .then(data => {
+    globaleLedenLijst = data; 
+    renderLeden(data);
+
+    // Pas nadat de ledenlijst geladen is, starten we de rest op
+    fetch_availability();
+    fetch_shifts();
+    fetch_users_voor_chat();
+  })
+  .catch(() => {
+    const el = document.getElementById('ledenList');
+    if (el) el.innerHTML = `<p class="leeg-tekst">Kon leden niet laden.</p>`;
+    
+    // Fallback opstart als de gebruikers API faalt
+    fetch_availability();
+    fetch_shifts();
+    fetch_users_voor_chat();
+  });
+});
